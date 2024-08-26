@@ -310,34 +310,42 @@ CAMLprim value caml_atomic_make(value v)
   CAMLreturn(ref);
 }
 
-CAMLprim value caml_atomic_load (value ref)
+CAMLprim value caml_atomic_load_field (value obj, value vfield)
 {
+  intnat field = Long_val(vfield);
   if (caml_domain_alone()) {
-    return Field(ref, 0);
+    return Field(obj, field);
   } else {
-    value v;
     /* See Note [MM] above */
     atomic_thread_fence(memory_order_acquire);
-    v = atomic_load(Op_atomic_val(ref));
-    return v;
+    return atomic_load(&Op_atomic_val(obj)[field]);
   }
+}
+CAMLprim value caml_atomic_load (value ref)
+{
+  return caml_atomic_load_field(ref, Val_long(0));
 }
 
 /* stores are implemented as exchanges */
-CAMLprim value caml_atomic_exchange (value ref, value v)
+CAMLprim value caml_atomic_exchange_field (value obj, value vfield, value v)
 {
   value ret;
+  intnat field = Long_val(vfield);
   if (caml_domain_alone()) {
-    ret = Field(ref, 0);
-    Field(ref, 0) = v;
+    ret = Field(obj, field);
+    Field(obj, field) = v;
   } else {
     /* See Note [MM] above */
     atomic_thread_fence(memory_order_acquire);
-    ret = atomic_exchange(Op_atomic_val(ref), v);
+    ret = atomic_exchange(&Op_atomic_val(obj)[field], v);
     atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
   }
-  write_barrier(ref, 0, ret, v);
+  write_barrier(obj, field, ret, v);
   return ret;
+}
+CAMLprim value caml_atomic_exchange (value ref, value v)
+{
+  return caml_atomic_exchange_field(ref, Val_long(0), v);
 }
 
 CAMLprim value caml_atomic_compare_exchange_field (value obj, intnat field, value oldval, value newval)
@@ -383,21 +391,26 @@ CAMLprim value caml_atomic_cas (value obj, value oldval, value newval)
   }
 }
 
-CAMLprim value caml_atomic_fetch_add (value ref, value incr)
+CAMLprim value caml_atomic_fetch_add_field (value obj, value vfield, value incr)
 {
+  intnat field = Long_val(vfield);
   value ret;
   if (caml_domain_alone()) {
-    value* p = Op_val(ref);
-    CAMLassert(Is_long(*p));
+    value* p = &Op_val(obj)[field];
     ret = *p;
+    CAMLassert(Is_long(ret));
     *p = Val_long(Long_val(ret) + Long_val(incr));
     /* no write barrier needed, integer write */
   } else {
-    atomic_value *p = &Op_atomic_val(ref)[0];
-    ret = atomic_fetch_add(p, 2*Long_val(incr));
+    atomic_value *p = &Op_atomic_val(obj)[field];
+    ret = atomic_fetch_add(p, 2 * Long_val(incr));
     atomic_thread_fence(memory_order_release); /* generates `dmb ish` on Arm64*/
   }
   return ret;
+}
+CAMLprim value caml_atomic_fetch_add (value ref, value incr)
+{
+  return caml_atomic_fetch_add_field(ref, Val_long(0), incr);
 }
 
 CAMLprim value caml_atomic_add (value ref, value incr)
