@@ -656,7 +656,7 @@ let comp_primitive stack_info p sz args =
   | Parray_of_iarray -> Kccall("caml_array_of_iarray", 1)
   | Pget_header _ -> Kccall("caml_get_header", 1)
   | Pobj_dup -> Kccall("caml_obj_dup", 1)
-  | Patomic_load _ -> Kccall("caml_atomic_load", 1)
+  | Patomic_load _ -> Kccall("caml_atomic_load_field", 2)
   | Patomic_set _
   | Patomic_exchange _ -> Kccall("caml_atomic_exchange", 2)
   | Patomic_compare_exchange _ -> Kccall("caml_atomic_compare_exchange", 3)
