@@ -364,8 +364,9 @@ CAMLprim value caml_atomic_compare_exchange_field (value obj, intnat field, valu
   }
 }
 
-CAMLexport int caml_atomic_cas_field (value obj, intnat field, value oldval, value newval)
+CAMLexport value caml_atomic_cas_field (value obj, value vfield, value oldval, value newval)
 {
+  intnat field = Long_val(vfield);
   if (caml_atomic_compare_exchange_field(obj, field, oldval, newval) == oldval) {
     return Val_true;
   } else {
