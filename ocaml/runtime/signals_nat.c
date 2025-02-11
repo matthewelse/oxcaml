@@ -16,6 +16,7 @@
 #define CAML_INTERNALS
 
 #include <unistd.h>
+#define _GNU_SOURCE 
 #define __USE_GNU
 #include <sys/ucontext.h>
 
