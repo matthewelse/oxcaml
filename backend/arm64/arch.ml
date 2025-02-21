@@ -58,6 +58,8 @@ type specific_operation =
   | Ibswap of { bitwidth: bswap_bitwidth; } (* endianness conversion *)
   | Imove32       (* 32-bit integer move *)
   | Isignext of int (* sign extension *)
+  | Imov_sys_reg of string
+  | Iyield
 
 and arith_operation =
     Ishiftadd
@@ -172,6 +174,8 @@ let print_specific_operation printreg op ppf arg =
   | Isignext n ->
       fprintf ppf "signext%d %a"
         n printreg arg.(0)
+  | Imov_sys_reg reg -> fprintf ppf "mrs %a, %s" printreg arg.(0) reg
+  | Iyield -> fprintf ppf "yield"
 
 let equal_addressing_mode left right =
   match left, right with
@@ -209,9 +213,11 @@ let equal_specific_operation left right =
     Int.equal (int_of_bswap_bitwidth left) (int_of_bswap_bitwidth right)
   | Imove32, Imove32 -> true
   | Isignext left, Isignext right -> Int.equal left right
+  | Imov_sys_reg reg, Imov_sys_reg reg' -> String.equal reg reg'
+  | Iyield, Iyield -> true
   | (Ifar_alloc _  | Ifar_poll _  | Ishiftarith _
     | Imuladd | Imulsub | Inegmulf | Imuladdf | Inegmuladdf | Imulsubf
-    | Inegmulsubf | Isqrtf | Ibswap _ | Imove32 | Isignext _), _ -> false
+    | Inegmulsubf | Isqrtf | Ibswap _ | Imove32 | Isignext _ | Imov_sys_reg _ | Iyield), _ -> false
 
 (* Recognition of logical immediate arguments *)
 
@@ -284,7 +290,7 @@ let is_logical_immediate x =
 (* Specific operations that are pure *)
 
 let operation_is_pure : specific_operation -> bool = function
-  | Ifar_alloc _ | Ifar_poll _ -> false
+  | Ifar_alloc _ | Ifar_poll _ | Iyield -> false 
   | Ishiftarith _ -> true
   | Imuladd -> true
   | Imulsub -> true
@@ -297,6 +303,7 @@ let operation_is_pure : specific_operation -> bool = function
   | Ibswap _ -> true
   | Imove32 -> true
   | Isignext _ -> true
+  | Imov_sys_reg _ -> true
 
 (* Specific operations that can raise *)
 
@@ -314,7 +321,9 @@ let operation_can_raise = function
   | Imove32
   | Ishiftarith (_, _)
   | Isignext _
-  | Ibswap _ -> false
+  | Ibswap _
+  | Imov_sys_reg _
+  | Iyield -> false
 
 let operation_allocates = function
   | Ifar_alloc _ -> true
@@ -330,7 +339,9 @@ let operation_allocates = function
   | Imove32
   | Ishiftarith (_, _)
   | Isignext _
-  | Ibswap _ -> false
+  | Ibswap _
+  | Imov_sys_reg _
+  | Iyield -> false
 
 (* See `amd64/arch.ml`. *)
 
@@ -354,11 +365,13 @@ let addressing_offset_in_bytes (addressing_mode_1: addressing_mode) (addressing_
 let can_cross_loads_or_stores (specific_operation : specific_operation) =
   match specific_operation with
   | Ifar_poll _ | Ifar_alloc _ | Ishiftarith _ | Imuladd | Imulsub | Inegmulf | Imuladdf
-  | Inegmuladdf | Imulsubf | Inegmulsubf | Isqrtf | Ibswap _ | Imove32 | Isignext _ ->
+  | Inegmuladdf | Imulsubf | Inegmulsubf | Isqrtf | Ibswap _ | Imove32 | Isignext _ | Imov_sys_reg _ 
+  | Iyield ->
     true
 
 let may_break_alloc_freshness (specific_operation : specific_operation) =
   match specific_operation with
   | Ifar_poll _ | Ifar_alloc _ | Ishiftarith _ | Imuladd | Imulsub | Inegmulf | Imuladdf
-  | Inegmuladdf | Imulsubf | Inegmulsubf | Isqrtf | Ibswap _ | Imove32 | Isignext _ ->
+  | Inegmuladdf | Imulsubf | Inegmulsubf | Isqrtf | Ibswap _ | Imove32 | Isignext _ | Imov_sys_reg _ 
+  | Iyield ->
     false

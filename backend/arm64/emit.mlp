@@ -534,6 +534,8 @@ module BR = Branch_relaxation.Make (struct
       | 16 | 24 | 32 -> 1
       | _ -> 1 + num_instructions_for_intconst (Nativeint.of_int num_bytes)
       end
+    | Lop (Ispecific (Imov_sys_reg _)) -> 1
+    | Lop (Ispecific Iyield) -> 1
     | Lop (Icsel _) -> 4
     | Lop (Ibeginregion | Iendregion) -> 1
     | Lop (Iintop (Icomp _)) -> 2
@@ -964,6 +966,10 @@ let emit_instr i =
         assembly_code_for_allocation i ~n ~local:false ~far:false ~dbginfo
     | Lop(Ispecific (Ifar_alloc { bytes = n; dbginfo })) ->
         assembly_code_for_allocation i ~n ~local:false ~far:true ~dbginfo
+    | Lop(Ispecific (Imov_sys_reg name)) ->
+        ` mrs {emit_reg i.res.(0)}, {emit_string name}\n`
+    | Lop(Ispecific Iyield) ->
+        ` yield\n`
     | Lop(Ialloc { bytes = n; dbginfo; mode = Local }) ->
         assembly_code_for_allocation i ~n ~local:true ~far:false ~dbginfo
     | Lop(Ibeginregion) ->

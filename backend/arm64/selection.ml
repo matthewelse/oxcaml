@@ -149,6 +149,11 @@ class selector =
         | _ -> super#select_operation op args dbg)
       (* Recognize floating-point square root *)
       | Cextcall { func = "sqrt" } -> Ispecific Isqrtf, args
+      | Cextcall { func; builtin = true; _ } -> (
+        match func with
+        | "caml_rdtsc_unboxed" -> Ispecific (Imov_sys_reg "CNTVCT_EL0"), args
+        | "caml_pause" -> Ispecific Iyield, args
+        | _ -> super#select_operation op args dbg)
       (* Recognize bswap instructions *)
       | Cbswap { bitwidth } ->
         let bitwidth = select_bitwidth bitwidth in

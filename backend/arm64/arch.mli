@@ -57,6 +57,8 @@ type specific_operation =
   | Ibswap of { bitwidth: bswap_bitwidth; } (* endianness conversion *)
   | Imove32       (* 32-bit integer move *)
   | Isignext of int (* sign extension *)
+  | Imov_sys_reg of string
+  | Iyield
 
 and arith_operation =
     Ishiftadd
