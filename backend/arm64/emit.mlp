@@ -1426,9 +1426,14 @@ let emit_instr i =
     | Lop(Intop (Iclz _ as op)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
-    | Lop(Intop ((Iadd|Isub|Imul|Idiv|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr|Ipopcnt) as op)) ->
+    | Lop(Intop ((Iadd|Isub|Imul|Idiv|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr) as op)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
+    | Lop(Intop Ipopcnt) ->
+        `	fmov	d7, {emit_reg i.arg.(0)}\n`;
+        `	cnt	  v7.8B, v7.8B\n`;
+        `	addv	b7,    v7.8B\n`;
+        `	fmov	{emit_reg i.res.(0)}, d7\n`;
     | Lop(Intop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`
