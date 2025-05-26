@@ -967,8 +967,6 @@ let unary_primitive env res dbg f arg =
   | End_region { ghost = true } | End_try_region { ghost = true } ->
     None, res, C.unit ~dbg
   | Get_header -> None, res, C.get_header arg dbg
-  | Atomic_load block_access_kind ->
-    None, res, C.atomic_load ~dbg (imm_or_ptr block_access_kind) arg
   | Peek kind ->
     let memory_chunk =
       K.Standard_int_or_float.to_kind_with_subkind kind
@@ -983,6 +981,8 @@ let binary_primitive env dbg f x y =
   match (f : P.binary_primitive) with
   | Block_set { kind; init; field } ->
     block_set ~dbg kind init ~field ~block:x ~new_value:y
+  | Atomic_load block_access_kind ->
+    C.atomic_load ~dbg (imm_or_ptr block_access_kind) ~ptr:x ~ofs:y
   | Array_load (array_kind, load_kind, _mut) ->
     array_load ~dbg array_kind load_kind ~arr:x ~index:y
   | String_or_bigstring_load (kind, width) ->

@@ -4377,11 +4377,14 @@ let cmm_arith_size (e : Cmm.expression) =
 
 (* Atomics *)
 
-let atomic_load ~dbg (imm_or_ptr : Lambda.immediate_or_pointer) atomic =
+let field_address_computed ptr ofs dbg =
+  array_indexing log2_size_addr ptr ofs dbg
+
+let atomic_load ~dbg (imm_or_ptr : Lambda.immediate_or_pointer) ~ptr ~ofs =
   let memory_chunk =
     match imm_or_ptr with Immediate -> Word_int | Pointer -> Word_val
   in
-  Cop (mk_load_atomic memory_chunk, [atomic], dbg)
+  Cop (mk_load_atomic memory_chunk, [field_address_computed ptr ofs dbg], dbg)
 
 let atomic_exchange_extcall ~dbg atomic ~new_value =
   Cop

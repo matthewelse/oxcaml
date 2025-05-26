@@ -971,7 +971,11 @@ val apply_function :
 (* Atomics *)
 
 val atomic_load :
-  dbg:Debuginfo.t -> Lambda.immediate_or_pointer -> expression -> expression
+  dbg:Debuginfo.t ->
+  Lambda.immediate_or_pointer ->
+  ptr:expression ->
+  ofs:expression ->
+  expression
 
 val atomic_exchange :
   dbg:Debuginfo.t ->
