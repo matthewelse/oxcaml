@@ -973,8 +973,8 @@ val apply_function :
 val atomic_load :
   dbg:Debuginfo.t ->
   Lambda.immediate_or_pointer ->
-  ptr:expression ->
-  ofs:expression ->
+  expression ->
+  field:expression ->
   expression
 
 val atomic_exchange :
@@ -985,17 +985,22 @@ val atomic_exchange :
   expression
 
 val atomic_fetch_and_add :
-  dbg:Debuginfo.t -> expression -> expression -> expression
+  dbg:Debuginfo.t -> expression -> field:expression -> expression -> expression
 
-val atomic_add : dbg:Debuginfo.t -> expression -> expression -> expression
+val atomic_add :
+  dbg:Debuginfo.t -> expression -> field:expression -> expression -> expression
 
-val atomic_sub : dbg:Debuginfo.t -> expression -> expression -> expression
+val atomic_sub :
+  dbg:Debuginfo.t -> expression -> field:expression -> expression -> expression
 
-val atomic_land : dbg:Debuginfo.t -> expression -> expression -> expression
+val atomic_land :
+  dbg:Debuginfo.t -> expression -> field:expression -> expression -> expression
 
-val atomic_lor : dbg:Debuginfo.t -> expression -> expression -> expression
+val atomic_lor :
+  dbg:Debuginfo.t -> expression -> field:expression -> expression -> expression
 
-val atomic_lxor : dbg:Debuginfo.t -> expression -> expression -> expression
+val atomic_lxor :
+  dbg:Debuginfo.t -> expression -> field:expression -> expression -> expression
 
 val atomic_compare_and_set :
   dbg:Debuginfo.t ->

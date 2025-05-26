@@ -519,7 +519,6 @@ type binary_primitive =
      deleting [Atomic_load] *)
   | Atomic_set of Block_access_field_kind.t
   | Atomic_exchange of Block_access_field_kind.t
-  | Atomic_int_arith of binary_int_atomic_op
   | Poke of Flambda_kind.Standard_int_or_float.t
 
 (** Primitives taking exactly three arguments. *)
@@ -538,6 +537,7 @@ type ternary_primitive =
                 be [Immediate] even though the atomic is marked as [Any_value],
                 for example. *)
       }
+  | Atomic_int_arith of binary_int_atomic_op
 
 (** Primitives taking zero or more arguments. *)
 type variadic_primitive =

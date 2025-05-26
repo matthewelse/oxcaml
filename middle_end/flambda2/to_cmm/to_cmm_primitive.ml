@@ -982,7 +982,7 @@ let binary_primitive env dbg f x y =
   | Block_set { kind; init; field } ->
     block_set ~dbg kind init ~field ~block:x ~new_value:y
   | Atomic_load block_access_kind ->
-    C.atomic_load ~dbg (imm_or_ptr block_access_kind) ~ptr:x ~ofs:y
+    C.atomic_load ~dbg (imm_or_ptr block_access_kind) x ~field:y
   | Array_load (array_kind, load_kind, _mut) ->
     array_load ~dbg array_kind load_kind ~arr:x ~index:y
   | String_or_bigstring_load (kind, width) ->
@@ -1007,12 +1007,6 @@ let binary_primitive env dbg f x y =
   | Atomic_set block_access_kind ->
     C.atomic_exchange ~dbg (imm_or_ptr block_access_kind) x ~new_value:y
     |> C.return_unit dbg
-  | Atomic_int_arith Fetch_add -> C.atomic_fetch_and_add ~dbg x y
-  | Atomic_int_arith Add -> C.atomic_add ~dbg x y
-  | Atomic_int_arith Sub -> C.atomic_sub ~dbg x y
-  | Atomic_int_arith And -> C.atomic_land ~dbg x y
-  | Atomic_int_arith Or -> C.atomic_lor ~dbg x y
-  | Atomic_int_arith Xor -> C.atomic_lxor ~dbg x y
   | Poke kind ->
     let memory_chunk =
       K.Standard_int_or_float.to_kind_with_subkind kind
@@ -1032,6 +1026,12 @@ let ternary_primitive _env dbg f x y z =
   | Atomic_compare_exchange { atomic_kind = _; args_kind } ->
     C.atomic_compare_exchange ~dbg (imm_or_ptr args_kind) x ~old_value:y
       ~new_value:z
+  | Atomic_int_arith Fetch_add -> C.atomic_fetch_and_add ~dbg x ~field:y z
+  | Atomic_int_arith Add -> C.atomic_add ~dbg x ~field:y z
+  | Atomic_int_arith Sub -> C.atomic_sub ~dbg x ~field:y z
+  | Atomic_int_arith And -> C.atomic_land ~dbg x ~field:y z
+  | Atomic_int_arith Or -> C.atomic_lor ~dbg x ~field:y z
+  | Atomic_int_arith Xor -> C.atomic_lxor ~dbg x ~field:y z
 
 let variadic_primitive _env dbg f args =
   match (f : P.variadic_primitive) with

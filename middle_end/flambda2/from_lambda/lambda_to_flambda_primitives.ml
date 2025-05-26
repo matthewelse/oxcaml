@@ -2426,13 +2426,18 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
         ( Atomic_compare_and_set
             (convert_block_access_field_kind immediate_or_pointer),
           [obj; field; old_value; new_value] ) ]
-  | Patomic_fetch_add, [[atomic]; [i]] ->
-    [Binary (Atomic_int_arith Fetch_add, atomic, i)]
-  | Patomic_add, [[atomic]; [i]] -> [Binary (Atomic_int_arith Add, atomic, i)]
-  | Patomic_sub, [[atomic]; [i]] -> [Binary (Atomic_int_arith Sub, atomic, i)]
-  | Patomic_land, [[atomic]; [i]] -> [Binary (Atomic_int_arith And, atomic, i)]
-  | Patomic_lor, [[atomic]; [i]] -> [Binary (Atomic_int_arith Or, atomic, i)]
-  | Patomic_lxor, [[atomic]; [i]] -> [Binary (Atomic_int_arith Xor, atomic, i)]
+  | Patomic_fetch_add, [[obj]; [field]; [i]] ->
+    [Ternary (Atomic_int_arith Fetch_add, obj, field, i)]
+  | Patomic_add, [[obj]; [field]; [i]] ->
+    [Ternary (Atomic_int_arith Add, obj, field, i)]
+  | Patomic_sub, [[obj]; [field]; [i]] ->
+    [Ternary (Atomic_int_arith Sub, obj, field, i)]
+  | Patomic_land, [[obj]; [field]; [i]] ->
+    [Ternary (Atomic_int_arith And, obj, field, i)]
+  | Patomic_lor, [[obj]; [field]; [i]] ->
+    [Ternary (Atomic_int_arith Or, obj, field, i)]
+  | Patomic_lxor, [[obj]; [field]; [i]] ->
+    [Ternary (Atomic_int_arith Xor, obj, field, i)]
   | Pdls_get, _ -> [Nullary Dls_get]
   | Ppoll, _ -> [Nullary Poll]
   | Preinterpret_unboxed_int64_as_tagged_int63, [[i]] ->
@@ -2530,8 +2535,7 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
             _,
             _ )
       | Pcompare_ints | Pcompare_floats _ | Pcompare_bints _ | Patomic_load _
-      | Patomic_exchange _ | Patomic_set _ | Patomic_fetch_add | Patomic_add
-      | Patomic_sub | Patomic_land | Patomic_lor | Patomic_lxor | Ppoke _ ),
+      | Patomic_exchange _ | Patomic_set _ | Ppoke _ ),
       ( []
       | [_]
       | _ :: _ :: _ :: _
@@ -2560,7 +2564,9 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
       | Pfloatarray_set_128 _ | Pfloat_array_set_128 _ | Pint_array_set_128 _
       | Punboxed_float_array_set_128 _ | Punboxed_float32_array_set_128 _
       | Punboxed_int32_array_set_128 _ | Punboxed_int64_array_set_128 _
-      | Punboxed_nativeint_array_set_128 _ | Patomic_compare_exchange _ ),
+      | Punboxed_nativeint_array_set_128 _ | Patomic_compare_exchange _
+      | Patomic_fetch_add | Patomic_add | Patomic_sub | Patomic_land
+      | Patomic_lor | Patomic_lxor ),
       ( []
       | [_]
       | [_; _]

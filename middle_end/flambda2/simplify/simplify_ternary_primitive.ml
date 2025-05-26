@@ -128,6 +128,12 @@ let simplify_atomic_compare_exchange
   let dacc = DA.add_variable dacc result_var result_var_ty in
   SPR.create new_term ~try_reify:false dacc
 
+let simplify_atomic_int_arith ~original_prim dacc ~original_term _dbg ~op:_
+    ~arg1:_ ~arg1_ty:_ ~arg2:_ ~arg2_ty:_ ~arg3:_ ~arg3_ty:_ ~result_var =
+  SPR.create_unknown dacc ~result_var
+    (P.result_kind' original_prim)
+    ~original_term
+
 let simplify_ternary_primitive dacc original_prim (prim : P.ternary_primitive)
     ~arg1 ~arg1_ty ~arg2 ~arg2_ty ~arg3 ~arg3_ty dbg ~result_var =
   let original_term = Named.create_prim original_prim dbg in
@@ -140,6 +146,7 @@ let simplify_ternary_primitive dacc original_prim (prim : P.ternary_primitive)
       simplify_bigarray_set ~num_dimensions bigarray_kind bigarray_layout
     | Atomic_compare_exchange { atomic_kind; args_kind } ->
       simplify_atomic_compare_exchange ~atomic_kind ~args_kind ~original_prim
+    | Atomic_int_arith op -> simplify_atomic_int_arith ~original_prim ~op
   in
   simplifier dacc ~original_term dbg ~arg1 ~arg1_ty ~arg2 ~arg2_ty ~arg3
     ~arg3_ty ~result_var

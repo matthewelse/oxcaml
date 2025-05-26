@@ -1639,7 +1639,6 @@ type binary_primitive =
   | Atomic_load of Block_access_field_kind.t
   | Atomic_set of Block_access_field_kind.t
   | Atomic_exchange of Block_access_field_kind.t
-  | Atomic_int_arith of binary_int_atomic_op
   | Poke of Flambda_kind.Standard_int_or_float.t
 
 let binary_primitive_eligible_for_cse p =
@@ -1658,9 +1657,7 @@ let binary_primitive_eligible_for_cse p =
        floating-point arithmetic operations. See also the comment in
        effects_and_coeffects of unary primitives. *)
     Flambda_features.float_const_prop ()
-  | Atomic_load _ | Atomic_set _ | Atomic_exchange _ | Atomic_int_arith _
-  | Poke _ ->
-    false
+  | Atomic_load _ | Atomic_set _ | Atomic_exchange _ | Poke _ -> false
 
 let compare_binary_primitive p1 p2 =
   let binary_primitive_numbering p =
@@ -1679,8 +1676,7 @@ let compare_binary_primitive p1 p2 =
     | Atomic_load _ -> 11
     | Atomic_set _ -> 12
     | Atomic_exchange _ -> 13
-    | Atomic_int_arith _ -> 14
-    | Poke _ -> 15
+    | Poke _ -> 14
   in
   match p1, p2 with
   | ( Block_set { kind = kind1; init = init1; field = field1 },
@@ -1740,14 +1736,12 @@ let compare_binary_primitive p1 p2 =
   | Atomic_set block_access_field_kind1, Atomic_set block_access_field_kind2 ->
     Block_access_field_kind.compare block_access_field_kind1
       block_access_field_kind2
-  | Atomic_int_arith op1, Atomic_int_arith op2 -> Stdlib.compare op1 op2
   | Poke kind1, Poke kind2 ->
     Flambda_kind.Standard_int_or_float.compare kind1 kind2
   | ( ( Block_set _ | Array_load _ | String_or_bigstring_load _
       | Bigarray_load _ | Phys_equal _ | Int_arith _ | Int_shift _ | Int_comp _
       | Float_arith _ | Float_comp _ | Bigarray_get_alignment _
-      | Atomic_exchange _ | Atomic_load _ | Atomic_set _ | Atomic_int_arith _
-      | Poke _ ),
+      | Atomic_exchange _ | Atomic_load _ | Atomic_set _ | Poke _ ),
       _ ) ->
     Stdlib.compare
       (binary_primitive_numbering p1)
@@ -1792,8 +1786,6 @@ let print_binary_primitive ppf p =
   | Atomic_set block_access_field_kind ->
     Format.fprintf ppf "@[(Atomic_set@ %a)@]" Block_access_field_kind.print
       block_access_field_kind
-  | Atomic_int_arith op ->
-    Format.fprintf ppf "@[(Atomic_int_arith %a)@]" print_binary_int_atomic_op op
   | Poke kind ->
     fprintf ppf "@[(Poke@ %a)@]"
       Flambda_kind.Standard_int_or_float.print_lowercase kind
@@ -1822,7 +1814,7 @@ let args_kind_of_binary_primitive p =
     K.naked_float32, K.naked_float32
   | Bigarray_get_alignment _ -> bigstring_kind, K.naked_immediate
   | Atomic_load _ -> K.value, K.value
-  | Atomic_set _ | Atomic_exchange _ | Atomic_int_arith _ -> K.value, K.value
+  | Atomic_set _ | Atomic_exchange _ -> K.value, K.value
   | Poke kind -> K.naked_nativeint, K.Standard_int_or_float.to_kind kind
 
 let result_kind_of_binary_primitive p : result_kind =
@@ -1845,10 +1837,8 @@ let result_kind_of_binary_primitive p : result_kind =
   | Float_arith (Float32, _) -> Singleton K.naked_float32
   | Phys_equal _ | Int_comp _ | Float_comp _ -> Singleton K.naked_immediate
   | Bigarray_get_alignment _ -> Singleton K.naked_immediate
-  | Atomic_load _ | Atomic_exchange _ | Atomic_int_arith Fetch_add ->
-    Singleton K.value
+  | Atomic_load _ | Atomic_exchange _ -> Singleton K.value
   | Atomic_set _ -> Unit
-  | Atomic_int_arith (Add | Sub | And | Or | Xor) -> Unit
   | Poke _ -> Unit
 
 let effects_and_coeffects_of_binary_primitive p : Effects_and_coeffects.t =
@@ -1877,7 +1867,7 @@ let effects_and_coeffects_of_binary_primitive p : Effects_and_coeffects.t =
     then No_effects, No_coeffects, Strict
     else No_effects, Has_coeffects, Strict
   | Bigarray_get_alignment _ -> No_effects, No_coeffects, Strict
-  | Atomic_load _ | Atomic_set _ | Atomic_exchange _ | Atomic_int_arith _ ->
+  | Atomic_load _ | Atomic_set _ | Atomic_exchange _ ->
     Arbitrary_effects, Has_coeffects, Strict
   | Poke _ -> Arbitrary_effects, No_coeffects, Strict
 
@@ -1886,8 +1876,7 @@ let binary_classify_for_printing p =
   | Array_load _ | Atomic_load _ -> Destructive
   | Block_set _ | Phys_equal _ | Int_arith _ | Int_shift _ | Int_comp _
   | Float_arith _ | Float_comp _ | Bigarray_load _ | String_or_bigstring_load _
-  | Bigarray_get_alignment _ | Atomic_set _ | Atomic_exchange _
-  | Atomic_int_arith _ | Poke _ ->
+  | Bigarray_get_alignment _ | Atomic_set _ | Atomic_exchange _ | Poke _ ->
     Neither
 
 let free_names_binary_primitive p =
@@ -1895,7 +1884,6 @@ let free_names_binary_primitive p =
   | Block_set _ | Array_load _ | String_or_bigstring_load _ | Bigarray_load _
   | Phys_equal _ | Int_arith _ | Int_shift _ | Int_comp _ | Float_arith _
   | Float_comp _ | Bigarray_get_alignment _ | Atomic_exchange _ | Atomic_set _
-  | Atomic_int_arith _
   | Poke (_ : Flambda_kind.Standard_int_or_float.t)
   | Atomic_load (_ : Block_access_field_kind.t) ->
     Name_occurrences.empty
@@ -1905,7 +1893,6 @@ let apply_renaming_binary_primitive p _renaming =
   | Block_set _ | Array_load _ | String_or_bigstring_load _ | Bigarray_load _
   | Phys_equal _ | Int_arith _ | Int_shift _ | Int_comp _ | Float_arith _
   | Float_comp _ | Bigarray_get_alignment _ | Atomic_exchange _ | Atomic_set _
-  | Atomic_int_arith _
   | Poke (_ : Flambda_kind.Standard_int_or_float.t)
   | Atomic_load (_ : Block_access_field_kind.t) ->
     p
@@ -1915,7 +1902,6 @@ let ids_for_export_binary_primitive p =
   | Block_set _ | Array_load _ | String_or_bigstring_load _ | Bigarray_load _
   | Phys_equal _ | Int_arith _ | Int_shift _ | Int_comp _ | Float_arith _
   | Float_comp _ | Bigarray_get_alignment _ | Atomic_exchange _ | Atomic_set _
-  | Atomic_int_arith _
   | Poke (_ : Flambda_kind.Standard_int_or_float.t)
   | Atomic_load (_ : Block_access_field_kind.t) ->
     Ids_for_export.empty
@@ -1928,11 +1914,12 @@ type ternary_primitive =
       { atomic_kind : Block_access_field_kind.t;
         args_kind : Block_access_field_kind.t
       }
+  | Atomic_int_arith of binary_int_atomic_op
 
 let ternary_primitive_eligible_for_cse p =
   match p with
   | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-  | Atomic_compare_exchange _ ->
+  | Atomic_compare_exchange _ | Atomic_int_arith _ ->
     false
 
 let compare_ternary_primitive p1 p2 =
@@ -1942,6 +1929,7 @@ let compare_ternary_primitive p1 p2 =
     | Bytes_or_bigstring_set _ -> 1
     | Bigarray_set _ -> 2
     | Atomic_compare_exchange _ -> 3
+    | Atomic_int_arith _ -> 4
   in
   match p1, p2 with
   | Array_set (kind1, set_kind1), Array_set (kind2, set_kind2) ->
@@ -1965,8 +1953,9 @@ let compare_ternary_primitive p1 p2 =
         { atomic_kind = atomic_kind2; args_kind = args_kind2 } ) ->
     let c = Block_access_field_kind.compare atomic_kind1 atomic_kind2 in
     if c <> 0 then c else Block_access_field_kind.compare args_kind1 args_kind2
+  | Atomic_int_arith op1, Atomic_int_arith op2 -> Stdlib.compare op1 op2
   | ( ( Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-      | Atomic_compare_exchange _ ),
+      | Atomic_compare_exchange _ | Atomic_int_arith _ ),
       _ ) ->
     Stdlib.compare
       (ternary_primitive_numbering p1)
@@ -1992,6 +1981,8 @@ let print_ternary_primitive ppf p =
       "@[(Atomic_compare_exchange@ (atomic_kind@ %a)@ (args_kind@ %a))@]"
       Block_access_field_kind.print atomic_kind Block_access_field_kind.print
       args_kind
+  | Atomic_int_arith op ->
+    Format.fprintf ppf "@[(Atomic_int_arith %a)@]" print_binary_int_atomic_op op
 
 let args_kind_of_ternary_primitive p =
   match p with
@@ -2021,12 +2012,13 @@ let args_kind_of_ternary_primitive p =
     bigstring_kind, bytes_or_bigstring_index_kind, K.naked_vec128
   | Bigarray_set (_, kind, _) ->
     bigarray_kind, bigarray_index_kind, Bigarray_kind.element_kind kind
-  | Atomic_compare_exchange _ -> K.value, K.value, K.value
+  | Atomic_compare_exchange _ | Atomic_int_arith _ -> K.value, K.value, K.value
 
 let result_kind_of_ternary_primitive p : result_kind =
   match p with
   | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _ -> Unit
-  | Atomic_compare_exchange _ -> Singleton K.value
+  | Atomic_compare_exchange _ | Atomic_int_arith Fetch_add -> Singleton K.value
+  | Atomic_int_arith (Add | Sub | And | Or | Xor) -> Unit
 
 let effects_and_coeffects_of_ternary_primitive p :
     Effects.t * Coeffects.t * Placement.t =
@@ -2034,30 +2026,31 @@ let effects_and_coeffects_of_ternary_primitive p :
   | Array_set _ -> writing_to_an_array
   | Bytes_or_bigstring_set _ -> writing_to_bytes_or_bigstring
   | Bigarray_set (_, kind, _) -> writing_to_a_bigarray kind
-  | Atomic_compare_exchange _ -> Arbitrary_effects, Has_coeffects, Strict
+  | Atomic_compare_exchange _ | Atomic_int_arith _ ->
+    Arbitrary_effects, Has_coeffects, Strict
 
 let ternary_classify_for_printing p =
   match p with
   | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-  | Atomic_compare_exchange _ ->
+  | Atomic_compare_exchange _ | Atomic_int_arith _ ->
     Neither
 
 let free_names_ternary_primitive p =
   match p with
   | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-  | Atomic_compare_exchange _ ->
+  | Atomic_compare_exchange _ | Atomic_int_arith _ ->
     Name_occurrences.empty
 
 let apply_renaming_ternary_primitive p _ =
   match p with
   | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-  | Atomic_compare_exchange _ ->
+  | Atomic_compare_exchange _ | Atomic_int_arith _ ->
     p
 
 let ids_for_export_ternary_primitive p =
   match p with
   | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-  | Atomic_compare_exchange _ ->
+  | Atomic_compare_exchange _ | Atomic_int_arith _ ->
     Ids_for_export.empty
 
 type variadic_primitive =

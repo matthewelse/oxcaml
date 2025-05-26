@@ -403,7 +403,6 @@ let binary_prim_size prim =
   | Float_comp (_width, Yielding_int_like_compare_functions ()) -> 8
   | Bigarray_get_alignment _ -> 3 (* load data + add index + and *)
   | Atomic_load _ -> 1
-  | Atomic_int_arith _ -> 1
   | Atomic_set Immediate -> 1
   | Atomic_exchange Immediate -> 1
   | Atomic_exchange Any_value | Atomic_set Any_value ->
@@ -416,11 +415,11 @@ let ternary_prim_size prim =
   | Bytes_or_bigstring_set (kind, width) -> bytes_like_set kind width
   | Bigarray_set (_dims, (Complex32 | Complex64), _layout) ->
     5 (* ~ 3 block_load + 2 block_set *)
-  | Bigarray_set (_dims, _kind, _layout) -> 2
-  (* ~ 1 block_load + 1 block_set *)
+  | Bigarray_set (_dims, _kind, _layout) -> 2 (* ~ 1 block_load + 1 block_set *)
   | Atomic_compare_exchange { atomic_kind = _; args_kind = Immediate } -> 1
   | Atomic_compare_exchange { atomic_kind = _; args_kind = Any_value } ->
     does_not_need_caml_c_call_extcall_size
+  | Atomic_int_arith _ -> 1
 
 let variadic_prim_size prim args =
   match (prim : Flambda_primitive.variadic_primitive) with
