@@ -981,6 +981,7 @@ val atomic_exchange :
   dbg:Debuginfo.t ->
   Lambda.immediate_or_pointer ->
   expression ->
+  field:expression ->
   new_value:expression ->
   expression
 

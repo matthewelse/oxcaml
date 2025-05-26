@@ -517,8 +517,6 @@ type binary_primitive =
   | Atomic_load of Block_access_field_kind.t
   (* CR mshinwell: consider putting atomicity onto [Peek] and [Poke] then
      deleting [Atomic_load] *)
-  | Atomic_set of Block_access_field_kind.t
-  | Atomic_exchange of Block_access_field_kind.t
   | Poke of Flambda_kind.Standard_int_or_float.t
 
 (** Primitives taking exactly three arguments. *)
@@ -538,6 +536,8 @@ type ternary_primitive =
                 for example. *)
       }
   | Atomic_int_arith of binary_int_atomic_op
+  | Atomic_exchange of Block_access_field_kind.t
+  | Atomic_set of Block_access_field_kind.t
 
 (** Primitives taking zero or more arguments. *)
 type variadic_primitive =

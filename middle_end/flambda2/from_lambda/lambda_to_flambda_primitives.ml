@@ -2396,20 +2396,22 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
     [tag_int (Nullary (Probe_is_enabled { name }))]
   | Pobj_dup, [[v]] -> [Unary (Obj_dup, v)]
   | Pget_header m, [[obj]] -> [get_header obj m ~current_region]
-  | Patomic_load { immediate_or_pointer }, [[atomic]; [field]] ->
+  | Patomic_load { immediate_or_pointer }, [[obj]; [field]] ->
     [ Binary
         ( Atomic_load (convert_block_access_field_kind immediate_or_pointer),
-          atomic,
+          obj,
           field ) ]
-  | Patomic_set { immediate_or_pointer }, [[atomic]; [new_value]] ->
-    [ Binary
+  | Patomic_set { immediate_or_pointer }, [[obj]; [field]; [new_value]] ->
+    [ Ternary
         ( Atomic_set (convert_block_access_field_kind immediate_or_pointer),
-          atomic,
+          obj,
+          field,
           new_value ) ]
-  | Patomic_exchange { immediate_or_pointer }, [[atomic]; [new_value]] ->
-    [ Binary
+  | Patomic_exchange { immediate_or_pointer }, [[obj]; [field]; [new_value]] ->
+    [ Ternary
         ( Atomic_exchange (convert_block_access_field_kind immediate_or_pointer),
-          atomic,
+          obj,
+          field,
           new_value ) ]
   | ( Patomic_compare_exchange { immediate_or_pointer },
       [[atomic]; [comparison_value]; [new_value]] ) ->
@@ -2535,7 +2537,7 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
             _,
             _ )
       | Pcompare_ints | Pcompare_floats _ | Pcompare_bints _ | Patomic_load _
-      | Patomic_exchange _ | Patomic_set _ | Ppoke _ ),
+      | Ppoke _ ),
       ( []
       | [_]
       | _ :: _ :: _ :: _
@@ -2566,7 +2568,7 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
       | Punboxed_int32_array_set_128 _ | Punboxed_int64_array_set_128 _
       | Punboxed_nativeint_array_set_128 _ | Patomic_compare_exchange _
       | Patomic_fetch_add | Patomic_add | Patomic_sub | Patomic_land
-      | Patomic_lor | Patomic_lxor ),
+      | Patomic_lor | Patomic_lxor | Patomic_exchange _ | Patomic_set _ ),
       ( []
       | [_]
       | [_; _]

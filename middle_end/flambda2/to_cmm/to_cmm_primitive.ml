@@ -1002,11 +1002,6 @@ let binary_primitive env dbg f x y =
   | Float_comp (width, Yielding_int_like_compare_functions ()) ->
     binary_float_comp_primitive_yielding_int env dbg width x y
   | Bigarray_get_alignment align -> C.bigstring_get_alignment x y align dbg
-  | Atomic_exchange block_access_kind ->
-    C.atomic_exchange ~dbg (imm_or_ptr block_access_kind) x ~new_value:y
-  | Atomic_set block_access_kind ->
-    C.atomic_exchange ~dbg (imm_or_ptr block_access_kind) x ~new_value:y
-    |> C.return_unit dbg
   | Poke kind ->
     let memory_chunk =
       K.Standard_int_or_float.to_kind_with_subkind kind
@@ -1032,6 +1027,15 @@ let ternary_primitive _env dbg f x y z =
   | Atomic_int_arith And -> C.atomic_land ~dbg x ~field:y z
   | Atomic_int_arith Or -> C.atomic_lor ~dbg x ~field:y z
   | Atomic_int_arith Xor -> C.atomic_lxor ~dbg x ~field:y z
+  | Atomic_exchange block_access_kind ->
+    C.atomic_exchange ~dbg
+      (imm_or_ptr block_access_kind)
+      x ~field:y ~new_value:z
+  | Atomic_set block_access_kind ->
+    C.atomic_exchange ~dbg
+      (imm_or_ptr block_access_kind)
+      x ~field:y ~new_value:z
+    |> C.return_unit dbg
 
 let variadic_primitive _env dbg f args =
   match (f : P.variadic_primitive) with

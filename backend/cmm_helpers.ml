@@ -4386,10 +4386,10 @@ let atomic_load ~dbg (imm_or_ptr : Lambda.immediate_or_pointer) obj ~field =
   in
   Cop (mk_load_atomic memory_chunk, [field_address_computed obj field dbg], dbg)
 
-let atomic_exchange_extcall ~dbg atomic ~new_value =
+let atomic_exchange_extcall ~dbg obj ~field ~new_value =
   Cop
     ( Cextcall
-        { func = "caml_atomic_exchange";
+        { func = "caml_atomic_exchange_field";
           builtin = false;
           returns = true;
           effects = Arbitrary_effects;
@@ -4398,18 +4398,19 @@ let atomic_exchange_extcall ~dbg atomic ~new_value =
           ty_args = [];
           alloc = false
         },
-      [atomic; new_value],
+      [obj; field; new_value],
       dbg )
 
-let atomic_exchange ~dbg (imm_or_ptr : Lambda.immediate_or_pointer) atomic
+let atomic_exchange ~dbg (imm_or_ptr : Lambda.immediate_or_pointer) obj ~field
     ~new_value =
+  let ptr = field_address_computed obj field dbg in
   match imm_or_ptr with
   | Immediate ->
     let op = Catomic { op = Exchange; size = Word } in
     if Proc.operation_supported op
-    then Cop (op, [new_value; atomic], dbg)
-    else atomic_exchange_extcall ~dbg atomic ~new_value
-  | Pointer -> atomic_exchange_extcall ~dbg atomic ~new_value
+    then Cop (op, [new_value; ptr], dbg)
+    else atomic_exchange_extcall ~dbg obj ~field ~new_value
+  | Pointer -> atomic_exchange_extcall ~dbg obj ~field ~new_value
 
 let atomic_arith ~dbg ~op ~untag ~ext_name obj field i =
   let i = if untag then decr_int i dbg else i in
@@ -4430,40 +4431,43 @@ let atomic_arith ~dbg ~op ~untag ~ext_name obj field i =
             ty_args = [];
             alloc = false
           },
-        [field_address_computed obj field dbg; i],
+        [obj; field; i],
         dbg )
 
 let atomic_fetch_and_add ~dbg obj ~field i =
   (* FIXME melse: update C stubs and backend *)
   atomic_arith ~dbg ~untag:true ~op:Fetch_and_add
-    ~ext_name:"caml_atomic_fetch_add" obj field i
+    ~ext_name:"caml_atomic_fetch_add_field" obj field i
 
 let atomic_add ~dbg obj ~field i =
-  atomic_arith ~dbg ~untag:true ~op:Add ~ext_name:"caml_atomic_add" obj field i
+  atomic_arith ~dbg ~untag:true ~op:Add ~ext_name:"caml_atomic_add_field" obj
+    field i
   |> return_unit dbg
 
 let atomic_sub ~dbg obj ~field i =
-  atomic_arith ~dbg ~untag:true ~op:Sub ~ext_name:"caml_atomic_sub" obj field i
+  atomic_arith ~dbg ~untag:true ~op:Sub ~ext_name:"caml_atomic_sub_field" obj
+    field i
   |> return_unit dbg
 
 let atomic_land ~dbg obj ~field i =
-  atomic_arith ~dbg ~untag:false ~op:Land ~ext_name:"caml_atomic_land" obj field
-    i
+  atomic_arith ~dbg ~untag:false ~op:Land ~ext_name:"caml_atomic_land_field" obj
+    field i
   |> return_unit dbg
 
 let atomic_lor ~dbg obj ~field i =
-  atomic_arith ~dbg ~untag:false ~op:Lor ~ext_name:"caml_atomic_lor" obj field i
+  atomic_arith ~dbg ~untag:false ~op:Lor ~ext_name:"caml_atomic_lor_field" obj
+    field i
   |> return_unit dbg
 
 let atomic_lxor ~dbg obj ~field i =
-  atomic_arith ~dbg ~untag:true ~op:Lxor ~ext_name:"caml_atomic_lxor" obj field
-    i
+  atomic_arith ~dbg ~untag:true ~op:Lxor ~ext_name:"caml_atomic_lxor_field" obj
+    field i
   |> return_unit dbg
 
 let atomic_compare_and_set_extcall ~dbg obj ~field ~old_value ~new_value =
   Cop
     ( Cextcall
-        { func = "caml_atomic_cas";
+        { func = "caml_atomic_cas_field";
           builtin = false;
           returns = true;
           effects = Arbitrary_effects;
