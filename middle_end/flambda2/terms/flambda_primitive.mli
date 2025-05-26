@@ -529,7 +529,6 @@ type ternary_primitive =
           for more details on the unarization. *)
   | Bytes_or_bigstring_set of bytes_like_value * string_accessor_width
   | Bigarray_set of num_dimensions * Bigarray_kind.t * Bigarray_layout.t
-  | Atomic_compare_and_set of Block_access_field_kind.t
   | Atomic_compare_exchange of
       { atomic_kind : Block_access_field_kind.t;
             (** The kind of values which the atomic can hold. *)
@@ -551,6 +550,7 @@ type variadic_primitive =
           body. *)
   | Make_block of Block_kind.t * Mutability.t * Alloc_mode.For_allocations.t
   | Make_array of Array_kind.t * Mutability.t * Alloc_mode.For_allocations.t
+  | Atomic_compare_and_set of Block_access_field_kind.t
 (* CR mshinwell: Invariant checks -- e.g. that the number of arguments matches
    [num_dimensions] *)
 

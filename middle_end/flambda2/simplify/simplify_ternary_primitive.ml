@@ -95,23 +95,6 @@ let simplify_atomic_compare_and_set_or_exchange_args
     then Immediate
     else Any_value
 
-let simplify_atomic_compare_and_set (args_kind : P.Block_access_field_kind.t)
-    ~original_prim:_ dacc ~original_term:_ dbg ~arg1:atomic ~arg1_ty:_
-    ~arg2:comparison_value ~arg2_ty:comparison_value_ty ~arg3:new_value
-    ~arg3_ty:new_value_ty ~result_var =
-  let args_kind =
-    simplify_atomic_compare_and_set_or_exchange_args args_kind dacc
-      ~comparison_value_ty ~new_value_ty
-  in
-  let new_term =
-    Named.create_prim
-      (Ternary
-         (Atomic_compare_and_set args_kind, atomic, comparison_value, new_value))
-      dbg
-  in
-  let dacc = DA.add_variable dacc result_var T.any_tagged_bool in
-  SPR.create new_term ~try_reify:false dacc
-
 let simplify_atomic_compare_exchange
     ~(atomic_kind : P.Block_access_field_kind.t)
     ~(args_kind : P.Block_access_field_kind.t) ~original_prim:_ dacc
@@ -155,8 +138,6 @@ let simplify_ternary_primitive dacc original_prim (prim : P.ternary_primitive)
       simplify_bytes_or_bigstring_set bytes_like_value string_accessor_width
     | Bigarray_set (num_dimensions, bigarray_kind, bigarray_layout) ->
       simplify_bigarray_set ~num_dimensions bigarray_kind bigarray_layout
-    | Atomic_compare_and_set access_kind ->
-      simplify_atomic_compare_and_set access_kind ~original_prim
     | Atomic_compare_exchange { atomic_kind; args_kind } ->
       simplify_atomic_compare_exchange ~atomic_kind ~args_kind ~original_prim
   in

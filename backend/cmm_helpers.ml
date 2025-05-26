@@ -4456,7 +4456,7 @@ let atomic_lxor ~dbg atomic i =
   atomic_arith ~dbg ~untag:true ~op:Lxor ~ext_name:"caml_atomic_lxor" atomic i
   |> return_unit dbg
 
-let atomic_compare_and_set_extcall ~dbg atomic ~old_value ~new_value =
+let atomic_compare_and_set_extcall ~dbg obj ~field ~old_value ~new_value =
   Cop
     ( Cextcall
         { func = "caml_atomic_cas";
@@ -4468,22 +4468,24 @@ let atomic_compare_and_set_extcall ~dbg atomic ~old_value ~new_value =
           ty_args = [];
           alloc = false
         },
-      [atomic; old_value; new_value],
+      [obj; field; old_value; new_value],
       dbg )
 
-let atomic_compare_and_set ~dbg (imm_or_ptr : Lambda.immediate_or_pointer)
-    atomic ~old_value ~new_value =
+let atomic_compare_and_set ~dbg (imm_or_ptr : Lambda.immediate_or_pointer) obj
+    ~field ~old_value ~new_value =
   match imm_or_ptr with
   | Immediate ->
     let op = Catomic { op = Compare_set; size = Word } in
     if Proc.operation_supported op
     then
       (* Use a bind to ensure [tag_int] gets optimised. *)
+      (* FIXME melse: Update [Compare_set] in the backend *)
       bind "res"
-        (Cop (op, [old_value; new_value; atomic], dbg))
+        (Cop (op, [old_value; new_value; obj; field], dbg))
         (fun a2 -> tag_int a2 dbg)
-    else atomic_compare_and_set_extcall ~dbg atomic ~old_value ~new_value
-  | Pointer -> atomic_compare_and_set_extcall ~dbg atomic ~old_value ~new_value
+    else atomic_compare_and_set_extcall ~dbg obj ~field ~old_value ~new_value
+  | Pointer ->
+    atomic_compare_and_set_extcall ~dbg obj ~field ~old_value ~new_value
 
 let atomic_compare_exchange_extcall ~dbg atomic ~old_value ~new_value =
   Cop

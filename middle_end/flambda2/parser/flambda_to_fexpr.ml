@@ -644,7 +644,7 @@ let ternop env (op : Flambda_primitive.ternary_primitive) : Fexpr.ternop =
     let ask = fexpr_of_array_set_kind env ask in
     Array_set (ak, ask)
   | Bytes_or_bigstring_set (blv, saw) -> Bytes_or_bigstring_set (blv, saw)
-  | Bigarray_set _ | Atomic_compare_and_set _ | Atomic_compare_exchange _ ->
+  | Bigarray_set _ | Atomic_compare_exchange _ ->
     Misc.fatal_errorf "TODO: Ternary primitive: %a"
       Flambda_primitive.Without_args.print
       (Flambda_primitive.Without_args.Ternary op)
@@ -657,7 +657,8 @@ let varop env (op : Flambda_primitive.variadic_primitive) : Fexpr.varop =
     let tag = tag |> Tag.Scannable.to_int in
     let alloc = alloc_mode_for_allocations env alloc in
     Make_block (tag, mutability, alloc)
-  | Make_block ((Naked_floats | Mixed _), _, _) | Make_array _ ->
+  | Make_block ((Naked_floats | Mixed _), _, _)
+  | Make_array _ | Atomic_compare_and_set _ ->
     Misc.fatal_errorf "TODO: Variadic primitive: %a"
       Flambda_primitive.Without_args.print
       (Flambda_primitive.Without_args.Variadic op)

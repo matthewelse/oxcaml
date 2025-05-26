@@ -1029,10 +1029,6 @@ let ternary_primitive _env dbg f x y z =
     bytes_or_bigstring_set ~dbg kind width ~bytes:x ~index:y ~new_value:z
   | Bigarray_set (_dimensions, kind, _layout) ->
     bigarray_store ~dbg kind ~bigarray:x ~index:y ~new_value:z
-  | Atomic_compare_and_set block_access_kind ->
-    C.atomic_compare_and_set ~dbg
-      (imm_or_ptr block_access_kind)
-      x ~old_value:y ~new_value:z
   | Atomic_compare_exchange { atomic_kind = _; args_kind } ->
     C.atomic_compare_exchange ~dbg (imm_or_ptr args_kind) x ~old_value:y
       ~new_value:z
@@ -1045,6 +1041,15 @@ let variadic_primitive _env dbg f args =
     C.int ~dbg 0
   | Make_block (kind, _mut, alloc_mode) -> make_block ~dbg kind alloc_mode args
   | Make_array (kind, _mut, alloc_mode) -> make_array ~dbg kind alloc_mode args
+  | Atomic_compare_and_set block_access_kind ->
+    let obj, field, old_value, new_value =
+      match args with
+      | [obj; field; old_value; new_value] -> obj, field, old_value, new_value
+      | _ -> failwith "Invalid arguments to [Atomic_compare_and_set _]"
+    in
+    C.atomic_compare_and_set ~dbg
+      (imm_or_ptr block_access_kind)
+      obj ~field ~old_value ~new_value
 
 let arg ?consider_inlining_effectful_expressions ~dbg env res simple =
   C.simple ?consider_inlining_effectful_expressions ~dbg env res simple

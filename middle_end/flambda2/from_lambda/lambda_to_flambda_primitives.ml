@@ -2421,13 +2421,11 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
           comparison_value,
           new_value ) ]
   | ( Patomic_compare_set { immediate_or_pointer },
-      [[atomic]; [old_value]; [new_value]] ) ->
-    [ Ternary
+      [[obj]; [field]; [old_value]; [new_value]] ) ->
+    [ Variadic
         ( Atomic_compare_and_set
             (convert_block_access_field_kind immediate_or_pointer),
-          atomic,
-          old_value,
-          new_value ) ]
+          [obj; field; old_value; new_value] ) ]
   | Patomic_fetch_add, [[atomic]; [i]] ->
     [Binary (Atomic_int_arith Fetch_add, atomic, i)]
   | Patomic_add, [[atomic]; [i]] -> [Binary (Atomic_int_arith Add, atomic, i)]
@@ -2562,8 +2560,7 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
       | Pfloatarray_set_128 _ | Pfloat_array_set_128 _ | Pint_array_set_128 _
       | Punboxed_float_array_set_128 _ | Punboxed_float32_array_set_128 _
       | Punboxed_int32_array_set_128 _ | Punboxed_int64_array_set_128 _
-      | Punboxed_nativeint_array_set_128 _ | Patomic_compare_set _
-      | Patomic_compare_exchange _ ),
+      | Punboxed_nativeint_array_set_128 _ | Patomic_compare_exchange _ ),
       ( []
       | [_]
       | [_; _]
@@ -2574,6 +2571,10 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
     Misc.fatal_errorf
       "Closure_conversion.convert_primitive: Wrong arity for ternary primitive \
        %a (%a)"
+      Printlambda.primitive prim H.print_list_of_lists_of_simple_or_prim args
+  | Patomic_compare_set _, _ ->
+    Misc.fatal_errorf
+      "Closure_conversion.convert_primitive: Wrong arity for primitive %a (%a)"
       Printlambda.primitive prim H.print_list_of_lists_of_simple_or_prim args
   | ( ( Pignore | Psequand | Psequor | Pbytes_of_string | Pbytes_to_string
       | Parray_of_iarray | Parray_to_iarray | Prunstack | Pperform | Presume

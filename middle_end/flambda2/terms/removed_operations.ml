@@ -58,7 +58,8 @@ let prim (prim : Flambda_primitive.t) =
   | Variadic (prim, _) -> (
     match prim with
     | Begin_region _ | Begin_try_region _ -> zero
-    | Make_block _ | Make_array _ -> alloc)
+    | Make_block _ | Make_array _ -> alloc
+    | Atomic_compare_and_set _ -> { zero with prim = 1 })
   [@@ocaml.warning "-fragile-match"]
 
 let branch = { zero with branch = 1 }
