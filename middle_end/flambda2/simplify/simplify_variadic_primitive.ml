@@ -214,6 +214,45 @@ let simplify_atomic_compare_and_set (args_kind : P.Block_access_field_kind.t)
   let dacc = DA.add_variable dacc result_var T.any_tagged_bool in
   SPR.create new_term ~try_reify:false dacc
 
+let simplify_atomic_compare_exchange
+    ~(atomic_kind : P.Block_access_field_kind.t)
+    ~(args_kind : P.Block_access_field_kind.t) ~original_prim:_ dacc
+    ~original_term:_ dbg ~args_with_tys ~result_var =
+  let ( (obj, _),
+        (field, _),
+        (comparison_value, comparison_value_ty),
+        (new_value, new_value_ty) ) =
+    match args_with_tys with
+    | [obj; field; comparison_value; new_value] ->
+      obj, field, comparison_value, new_value
+    | _ ->
+      Misc.fatal_error "Unexpected args to [simplify_atomic_compare_and_set]"
+  in
+  (* This primitive can have its arguments specialised as for compare-and-set
+     (see above). However we can also propagate information about its result
+     type. Since this relates to all possible values that the atomic can hold,
+     we have to use the information provided by the frontend.
+
+     Recall that the compare-exchange returns the old value. *)
+  let args_kind =
+    simplify_atomic_compare_and_set_or_exchange_args args_kind dacc
+      ~comparison_value_ty ~new_value_ty
+  in
+  let new_term =
+    Named.create_prim
+      (Variadic
+         ( Atomic_compare_exchange { atomic_kind; args_kind },
+           [obj; field; comparison_value; new_value] ))
+      dbg
+  in
+  let result_var_ty =
+    match atomic_kind (* N.B. not [args_kind] *) with
+    | Immediate -> T.any_tagged_immediate
+    | Any_value -> T.any_value
+  in
+  let dacc = DA.add_variable dacc result_var result_var_ty in
+  SPR.create new_term ~try_reify:false dacc
+
 let simplify_variadic_primitive dacc original_prim (prim : P.variadic_primitive)
     ~args_with_tys dbg ~result_var =
   let original_term = Named.create_prim original_prim dbg in
@@ -228,5 +267,7 @@ let simplify_variadic_primitive dacc original_prim (prim : P.variadic_primitive)
       simplify_make_array array_kind ~mutable_or_immutable alloc_mode
     | Atomic_compare_and_set access_kind ->
       simplify_atomic_compare_and_set access_kind ~original_prim
+    | Atomic_compare_exchange { atomic_kind; args_kind } ->
+      simplify_atomic_compare_exchange ~atomic_kind ~args_kind ~original_prim
   in
   simplifier dacc ~original_term dbg ~args_with_tys ~result_var

@@ -1890,19 +1890,14 @@ type ternary_primitive =
   | Array_set of Array_kind.t * Array_set_kind.t
   | Bytes_or_bigstring_set of bytes_like_value * string_accessor_width
   | Bigarray_set of num_dimensions * Bigarray_kind.t * Bigarray_layout.t
-  | Atomic_compare_exchange of
-      { atomic_kind : Block_access_field_kind.t;
-        args_kind : Block_access_field_kind.t
-      }
   | Atomic_int_arith of binary_int_atomic_op
   | Atomic_exchange of Block_access_field_kind.t
   | Atomic_set of Block_access_field_kind.t
 
 let ternary_primitive_eligible_for_cse p =
   match p with
-  | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-  | Atomic_compare_exchange _ | Atomic_int_arith _ | Atomic_exchange _
-  | Atomic_set _ ->
+  | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _ | Atomic_int_arith _
+  | Atomic_exchange _ | Atomic_set _ ->
     false
 
 let compare_ternary_primitive p1 p2 =
@@ -1911,10 +1906,9 @@ let compare_ternary_primitive p1 p2 =
     | Array_set _ -> 0
     | Bytes_or_bigstring_set _ -> 1
     | Bigarray_set _ -> 2
-    | Atomic_compare_exchange _ -> 3
-    | Atomic_int_arith _ -> 4
-    | Atomic_exchange _ -> 5
-    | Atomic_set _ -> 6
+    | Atomic_int_arith _ -> 3
+    | Atomic_exchange _ -> 4
+    | Atomic_set _ -> 5
   in
   match p1, p2 with
   | Array_set (kind1, set_kind1), Array_set (kind2, set_kind2) ->
@@ -1932,12 +1926,6 @@ let compare_ternary_primitive p1 p2 =
     else
       let c = Stdlib.compare kind1 kind2 in
       if c <> 0 then c else Stdlib.compare layout1 layout2
-  | ( Atomic_compare_exchange
-        { atomic_kind = atomic_kind1; args_kind = args_kind1 },
-      Atomic_compare_exchange
-        { atomic_kind = atomic_kind2; args_kind = args_kind2 } ) ->
-    let c = Block_access_field_kind.compare atomic_kind1 atomic_kind2 in
-    if c <> 0 then c else Block_access_field_kind.compare args_kind1 args_kind2
   | Atomic_int_arith op1, Atomic_int_arith op2 -> Stdlib.compare op1 op2
   | ( Atomic_exchange block_access_field_kind1,
       Atomic_exchange block_access_field_kind2 ) ->
@@ -1947,8 +1935,7 @@ let compare_ternary_primitive p1 p2 =
     Block_access_field_kind.compare block_access_field_kind1
       block_access_field_kind2
   | ( ( Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-      | Atomic_compare_exchange _ | Atomic_int_arith _ | Atomic_exchange _
-      | Atomic_set _ ),
+      | Atomic_int_arith _ | Atomic_exchange _ | Atomic_set _ ),
       _ ) ->
     Stdlib.compare
       (ternary_primitive_numbering p1)
@@ -1969,11 +1956,6 @@ let print_ternary_primitive ppf p =
     fprintf ppf
       "@[(Bigarray_set (num_dimensions@ %d)@ (kind@ %a)@ (layout@ %a))@]"
       num_dimensions Bigarray_kind.print kind Bigarray_layout.print layout
-  | Atomic_compare_exchange { atomic_kind; args_kind } ->
-    Format.fprintf ppf
-      "@[(Atomic_compare_exchange@ (atomic_kind@ %a)@ (args_kind@ %a))@]"
-      Block_access_field_kind.print atomic_kind Block_access_field_kind.print
-      args_kind
   | Atomic_int_arith op ->
     Format.fprintf ppf "@[(Atomic_int_arith %a)@]" print_binary_int_atomic_op op
   | Atomic_exchange block_access_field_kind ->
@@ -2011,14 +1993,13 @@ let args_kind_of_ternary_primitive p =
     bigstring_kind, bytes_or_bigstring_index_kind, K.naked_vec128
   | Bigarray_set (_, kind, _) ->
     bigarray_kind, bigarray_index_kind, Bigarray_kind.element_kind kind
-  | Atomic_compare_exchange _ | Atomic_int_arith _ | Atomic_exchange _
-  | Atomic_set _ ->
+  | Atomic_int_arith _ | Atomic_exchange _ | Atomic_set _ ->
     K.value, K.value, K.value
 
 let result_kind_of_ternary_primitive p : result_kind =
   match p with
   | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _ -> Unit
-  | Atomic_compare_exchange _ | Atomic_int_arith Fetch_add -> Singleton K.value
+  | Atomic_int_arith Fetch_add -> Singleton K.value
   | Atomic_int_arith (Add | Sub | And | Or | Xor) | Atomic_set _ -> Unit
   | Atomic_exchange _ -> Singleton K.value
 
@@ -2028,36 +2009,31 @@ let effects_and_coeffects_of_ternary_primitive p :
   | Array_set _ -> writing_to_an_array
   | Bytes_or_bigstring_set _ -> writing_to_bytes_or_bigstring
   | Bigarray_set (_, kind, _) -> writing_to_a_bigarray kind
-  | Atomic_compare_exchange _ | Atomic_int_arith _ | Atomic_exchange _
-  | Atomic_set _ ->
+  | Atomic_int_arith _ | Atomic_exchange _ | Atomic_set _ ->
     Arbitrary_effects, Has_coeffects, Strict
 
 let ternary_classify_for_printing p =
   match p with
-  | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-  | Atomic_compare_exchange _ | Atomic_int_arith _ | Atomic_exchange _
-  | Atomic_set _ ->
+  | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _ | Atomic_int_arith _
+  | Atomic_exchange _ | Atomic_set _ ->
     Neither
 
 let free_names_ternary_primitive p =
   match p with
-  | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-  | Atomic_compare_exchange _ | Atomic_int_arith _ | Atomic_exchange _
-  | Atomic_set _ ->
+  | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _ | Atomic_int_arith _
+  | Atomic_exchange _ | Atomic_set _ ->
     Name_occurrences.empty
 
 let apply_renaming_ternary_primitive p _ =
   match p with
-  | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-  | Atomic_compare_exchange _ | Atomic_int_arith _ | Atomic_exchange _
-  | Atomic_set _ ->
+  | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _ | Atomic_int_arith _
+  | Atomic_exchange _ | Atomic_set _ ->
     p
 
 let ids_for_export_ternary_primitive p =
   match p with
-  | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _
-  | Atomic_compare_exchange _ | Atomic_int_arith _ | Atomic_exchange _
-  | Atomic_set _ ->
+  | Array_set _ | Bytes_or_bigstring_set _ | Bigarray_set _ | Atomic_int_arith _
+  | Atomic_exchange _ | Atomic_set _ ->
     Ids_for_export.empty
 
 type variadic_primitive =
@@ -2066,6 +2042,10 @@ type variadic_primitive =
   | Make_block of Block_kind.t * Mutability.t * Alloc_mode.For_allocations.t
   | Make_array of Array_kind.t * Mutability.t * Alloc_mode.For_allocations.t
   | Atomic_compare_and_set of Block_access_field_kind.t
+  | Atomic_compare_exchange of
+      { atomic_kind : Block_access_field_kind.t;
+        args_kind : Block_access_field_kind.t
+      }
 
 let variadic_primitive_eligible_for_cse p ~args =
   match p with
@@ -2074,7 +2054,7 @@ let variadic_primitive_eligible_for_cse p ~args =
   | Make_block (_, Mutable, _) | Make_array (_, Mutable, _) -> false
   | Make_block (_, Immutable_unique, _)
   | Make_array (_, Immutable_unique, _)
-  | Atomic_compare_and_set _ ->
+  | Atomic_compare_and_set _ | Atomic_compare_exchange _ ->
     false
   | Make_block (_, Immutable, Heap) | Make_array (_, Immutable, Heap) ->
     (* See comment in [unary_primitive_eligible_for_cse], above, on [Box_number]
@@ -2082,6 +2062,15 @@ let variadic_primitive_eligible_for_cse p ~args =
     List.exists (fun arg -> Simple.is_var arg) args
 
 let compare_variadic_primitive p1 p2 =
+  let variadic_primitive_numbering p =
+    match p with
+    | Begin_region _ -> 0
+    | Begin_try_region _ -> 1
+    | Make_block _ -> 2
+    | Make_array _ -> 3
+    | Atomic_compare_and_set _ -> 4
+    | Atomic_compare_exchange _ -> 5
+  in
   match p1, p2 with
   | Begin_region { ghost = ghost1 }, Begin_region { ghost = ghost2 } ->
     Bool.compare ghost1 ghost2
@@ -2111,21 +2100,18 @@ let compare_variadic_primitive p1 p2 =
       Atomic_compare_and_set block_access_field_kind2 ) ->
     Block_access_field_kind.compare block_access_field_kind1
       block_access_field_kind2
-  | ( Begin_region _,
-      ( Begin_try_region _ | Make_block _ | Make_array _
-      | Atomic_compare_and_set _ ) ) ->
-    -1
-  | Begin_try_region _, (Make_block _ | Make_array _ | Atomic_compare_and_set _)
-    ->
-    -1
-  | Begin_try_region _, Begin_region _ -> 1
-  | Make_block _, (Make_array _ | Atomic_compare_and_set _) -> -1
-  | Make_block _, (Begin_region _ | Begin_try_region _) -> 1
-  | Make_array _, (Begin_region _ | Begin_try_region _ | Make_block _) -> 1
-  | Make_array _, Atomic_compare_and_set _ -> -1
-  | ( Atomic_compare_and_set _,
-      (Begin_region _ | Begin_try_region _ | Make_block _ | Make_array _) ) ->
-    1
+  | ( Atomic_compare_exchange
+        { atomic_kind = atomic_kind1; args_kind = args_kind1 },
+      Atomic_compare_exchange
+        { atomic_kind = atomic_kind2; args_kind = args_kind2 } ) ->
+    let c = Block_access_field_kind.compare atomic_kind1 atomic_kind2 in
+    if c <> 0 then c else Block_access_field_kind.compare args_kind1 args_kind2
+  | ( ( Begin_region _ | Begin_try_region _ | Make_block _ | Make_array _
+      | Atomic_compare_and_set _ | Atomic_compare_exchange _ ),
+      _ ) ->
+    Stdlib.compare
+      (variadic_primitive_numbering p1)
+      (variadic_primitive_numbering p2)
 
 let equal_variadic_primitive p1 p2 = compare_variadic_primitive p1 p2 = 0
 
@@ -2145,6 +2131,11 @@ let print_variadic_primitive ppf p =
   | Atomic_compare_and_set block_access_field_kind ->
     Format.fprintf ppf "@[(Atomic_compare_and_set@ %a)@]"
       Block_access_field_kind.print block_access_field_kind
+  | Atomic_compare_exchange { atomic_kind; args_kind } ->
+    Format.fprintf ppf
+      "@[(Atomic_compare_exchange@ (atomic_kind@ %a)@ (args_kind@ %a))@]"
+      Block_access_field_kind.print atomic_kind Block_access_field_kind.print
+      args_kind
 
 let args_kind_of_variadic_primitive p : arg_kinds =
   match p with
@@ -2154,13 +2145,15 @@ let args_kind_of_variadic_primitive p : arg_kinds =
   | Make_block (Mixed (_tag, shape), _, _) -> Variadic_mixed shape
   | Make_array (kind, _, _) ->
     Variadic_unboxed_product (Array_kind.element_kinds_for_primitive kind)
-  | Atomic_compare_and_set _ ->
+  | Atomic_compare_and_set _ | Atomic_compare_exchange _ ->
     Variadic_unboxed_product [K.value; K.value; K.value; K.value]
 
 let result_kind_of_variadic_primitive p : result_kind =
   match p with
   | Begin_region _ | Begin_try_region _ -> Singleton K.region
-  | Make_block _ | Make_array _ | Atomic_compare_and_set _ -> Singleton K.value
+  | Make_block _ | Make_array _ | Atomic_compare_and_set _
+  | Atomic_compare_exchange _ ->
+    Singleton K.value
 
 let effects_and_coeffects_of_begin_region : Effects_and_coeffects.t =
   (* Ensure these don't get moved, but allow them to be deleted. *)
@@ -2176,14 +2169,14 @@ let effects_and_coeffects_of_variadic_primitive p =
       | Local _ -> Coeffects.Has_coeffects
     in
     Effects.Only_generative_effects mut, coeffects, Placement.Strict
-  | Atomic_compare_and_set _ ->
+  | Atomic_compare_and_set _ | Atomic_compare_exchange _ ->
     Effects.Arbitrary_effects, Coeffects.Has_coeffects, Placement.Strict
 
 let variadic_classify_for_printing p =
   match p with
   | Begin_region _ | Begin_try_region _ -> Neither
   | Make_block _ | Make_array _ -> Constructive
-  | Atomic_compare_and_set _ -> Neither
+  | Atomic_compare_and_set _ | Atomic_compare_exchange _ -> Neither
 
 let free_names_variadic_primitive p =
   match p with
@@ -2192,7 +2185,8 @@ let free_names_variadic_primitive p =
     Alloc_mode.For_allocations.free_names alloc_mode
   | Make_array (_kind, _mut, alloc_mode) ->
     Alloc_mode.For_allocations.free_names alloc_mode
-  | Atomic_compare_and_set _ -> Name_occurrences.empty
+  | Atomic_compare_and_set _ | Atomic_compare_exchange _ ->
+    Name_occurrences.empty
 
 let apply_renaming_variadic_primitive p renaming =
   match p with
@@ -2207,7 +2201,7 @@ let apply_renaming_variadic_primitive p renaming =
       Alloc_mode.For_allocations.apply_renaming alloc_mode renaming
     in
     if alloc_mode == alloc_mode' then p else Make_array (kind, mut, alloc_mode')
-  | Atomic_compare_and_set _ -> p
+  | Atomic_compare_and_set _ | Atomic_compare_exchange _ -> p
 
 let ids_for_export_variadic_primitive p =
   match p with
@@ -2216,7 +2210,7 @@ let ids_for_export_variadic_primitive p =
     Alloc_mode.For_allocations.ids_for_export alloc_mode
   | Make_array (_kind, _mut, alloc_mode) ->
     Alloc_mode.For_allocations.ids_for_export alloc_mode
-  | Atomic_compare_and_set _ -> Ids_for_export.empty
+  | Atomic_compare_and_set _ | Atomic_compare_exchange _ -> Ids_for_export.empty
 
 type t =
   | Nullary of nullary_primitive
@@ -2568,7 +2562,8 @@ end = struct
               let kinds = List.map K.With_subkind.erase_subkind kinds in
               Make_block (Values (tag, kinds), mutability, alloc_mode)
             | Make_block ((Naked_floats | Mixed _), _, _)
-            | Make_array _ | Atomic_compare_and_set _ ->
+            | Make_array _ | Atomic_compare_and_set _
+            | Atomic_compare_exchange _ ->
               prim
           in
           Variadic (prim, args)

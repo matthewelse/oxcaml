@@ -2414,14 +2414,12 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
           field,
           new_value ) ]
   | ( Patomic_compare_exchange { immediate_or_pointer },
-      [[atomic]; [comparison_value]; [new_value]] ) ->
+      [[obj]; [field]; [comparison_value]; [new_value]] ) ->
     let access_kind = convert_block_access_field_kind immediate_or_pointer in
-    [ Ternary
+    [ Variadic
         ( Atomic_compare_exchange
             { atomic_kind = access_kind; args_kind = access_kind },
-          atomic,
-          comparison_value,
-          new_value ) ]
+          [obj; field; comparison_value; new_value] ) ]
   | ( Patomic_compare_set { immediate_or_pointer },
       [[obj]; [field]; [old_value]; [new_value]] ) ->
     [ Variadic
@@ -2566,9 +2564,9 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
       | Pfloatarray_set_128 _ | Pfloat_array_set_128 _ | Pint_array_set_128 _
       | Punboxed_float_array_set_128 _ | Punboxed_float32_array_set_128 _
       | Punboxed_int32_array_set_128 _ | Punboxed_int64_array_set_128 _
-      | Punboxed_nativeint_array_set_128 _ | Patomic_compare_exchange _
-      | Patomic_fetch_add | Patomic_add | Patomic_sub | Patomic_land
-      | Patomic_lor | Patomic_lxor | Patomic_exchange _ | Patomic_set _ ),
+      | Punboxed_nativeint_array_set_128 _ | Patomic_fetch_add | Patomic_add
+      | Patomic_sub | Patomic_land | Patomic_lor | Patomic_lxor
+      | Patomic_exchange _ | Patomic_set _ ),
       ( []
       | [_]
       | [_; _]
@@ -2580,7 +2578,7 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
       "Closure_conversion.convert_primitive: Wrong arity for ternary primitive \
        %a (%a)"
       Printlambda.primitive prim H.print_list_of_lists_of_simple_or_prim args
-  | Patomic_compare_set _, _ ->
+  | (Patomic_compare_set _ | Patomic_compare_exchange _), _ ->
     Misc.fatal_errorf
       "Closure_conversion.convert_primitive: Wrong arity for primitive %a (%a)"
       Printlambda.primitive prim H.print_list_of_lists_of_simple_or_prim args

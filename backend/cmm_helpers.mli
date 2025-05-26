@@ -1016,6 +1016,7 @@ val atomic_compare_exchange :
   dbg:Debuginfo.t ->
   Lambda.immediate_or_pointer ->
   expression ->
+  field:expression ->
   old_value:expression ->
   new_value:expression ->
   expression

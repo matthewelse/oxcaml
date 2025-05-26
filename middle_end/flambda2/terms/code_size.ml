@@ -412,14 +412,8 @@ let ternary_prim_size prim =
   | Bigarray_set (_dims, (Complex32 | Complex64), _layout) ->
     5 (* ~ 3 block_load + 2 block_set *)
   | Bigarray_set (_dims, _kind, _layout) -> 2 (* ~ 1 block_load + 1 block_set *)
-  | Atomic_compare_exchange { atomic_kind = _; args_kind = Immediate }
-  | Atomic_exchange Immediate
-  | Atomic_set Immediate
-  | Atomic_int_arith _ ->
-    1
-  | Atomic_exchange Any_value
-  | Atomic_compare_exchange { atomic_kind = _; args_kind = Any_value }
-  | Atomic_set Any_value ->
+  | Atomic_exchange Immediate | Atomic_set Immediate | Atomic_int_arith _ -> 1
+  | Atomic_exchange Any_value | Atomic_set Any_value ->
     does_not_need_caml_c_call_extcall_size
 
 let variadic_prim_size prim args =
@@ -431,8 +425,11 @@ let variadic_prim_size prim args =
      expensive than the other cases *)
   | Make_array (_, _mut, _alloc_mode) ->
     alloc_size + List.length args
+  | Atomic_compare_exchange { atomic_kind = _; args_kind = Immediate } -> 1
   | Atomic_compare_and_set Immediate -> 3
-  | Atomic_compare_and_set Any_value -> does_not_need_caml_c_call_extcall_size
+  | Atomic_compare_and_set Any_value
+  | Atomic_compare_exchange { atomic_kind = _; args_kind = Any_value } ->
+    does_not_need_caml_c_call_extcall_size
 
 let prim (prim : Flambda_primitive.t) =
   match prim with

@@ -526,15 +526,6 @@ type ternary_primitive =
           for more details on the unarization. *)
   | Bytes_or_bigstring_set of bytes_like_value * string_accessor_width
   | Bigarray_set of num_dimensions * Bigarray_kind.t * Bigarray_layout.t
-  | Atomic_compare_exchange of
-      { atomic_kind : Block_access_field_kind.t;
-            (** The kind of values which the atomic can hold. *)
-        args_kind : Block_access_field_kind.t
-            (** The kind of values which the compare-exchange operation is to
-                be used with on this particular occasion.  Note that this might
-                be [Immediate] even though the atomic is marked as [Any_value],
-                for example. *)
-      }
   | Atomic_int_arith of binary_int_atomic_op
   | Atomic_exchange of Block_access_field_kind.t
   | Atomic_set of Block_access_field_kind.t
@@ -551,6 +542,15 @@ type variadic_primitive =
   | Make_block of Block_kind.t * Mutability.t * Alloc_mode.For_allocations.t
   | Make_array of Array_kind.t * Mutability.t * Alloc_mode.For_allocations.t
   | Atomic_compare_and_set of Block_access_field_kind.t
+  | Atomic_compare_exchange of
+      { atomic_kind : Block_access_field_kind.t;
+            (** The kind of values which the atomic can hold. *)
+        args_kind : Block_access_field_kind.t
+            (** The kind of values which the compare-exchange operation is to
+                be used with on this particular occasion.  Note that this might
+                be [Immediate] even though the atomic is marked as [Any_value],
+                for example. *)
+      }
 (* CR mshinwell: Invariant checks -- e.g. that the number of arguments matches
    [num_dimensions] *)
 

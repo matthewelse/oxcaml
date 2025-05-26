@@ -4495,10 +4495,10 @@ let atomic_compare_and_set ~dbg (imm_or_ptr : Lambda.immediate_or_pointer) obj
   | Pointer ->
     atomic_compare_and_set_extcall ~dbg obj ~field ~old_value ~new_value
 
-let atomic_compare_exchange_extcall ~dbg atomic ~old_value ~new_value =
+let atomic_compare_exchange_extcall ~dbg obj ~field ~old_value ~new_value =
   Cop
     ( Cextcall
-        { func = "caml_atomic_compare_exchange";
+        { func = "caml_atomic_compare_exchange_field";
           builtin = false;
           returns = true;
           effects = Arbitrary_effects;
@@ -4507,18 +4507,20 @@ let atomic_compare_exchange_extcall ~dbg atomic ~old_value ~new_value =
           ty_args = [];
           alloc = false
         },
-      [atomic; old_value; new_value],
+      [obj; field; old_value; new_value],
       dbg )
 
-let atomic_compare_exchange ~dbg (imm_or_ptr : Lambda.immediate_or_pointer)
-    atomic ~old_value ~new_value =
+let atomic_compare_exchange ~dbg (imm_or_ptr : Lambda.immediate_or_pointer) obj
+    ~field ~old_value ~new_value =
   match imm_or_ptr with
   | Immediate ->
     let op = Catomic { op = Compare_exchange; size = Word } in
     if Proc.operation_supported op
-    then Cop (op, [old_value; new_value; atomic], dbg)
-    else atomic_compare_exchange_extcall ~dbg atomic ~old_value ~new_value
-  | Pointer -> atomic_compare_exchange_extcall ~dbg atomic ~old_value ~new_value
+    then
+      Cop (op, [old_value; new_value; field_address_computed obj field dbg], dbg)
+    else atomic_compare_exchange_extcall ~dbg obj ~field ~old_value ~new_value
+  | Pointer ->
+    atomic_compare_exchange_extcall ~dbg obj ~field ~old_value ~new_value
 
 type even_or_odd =
   | Even
