@@ -21,9 +21,9 @@ if [ -z "$TOPLEVEL" ] || [ ! -d "$TOPLEVEL" ]; then
 fi
 
 # Build list of items to preserve: default ones + command-line arguments
-PRESERVE_ITEMS=".claude .vscode"
+PRESERVE_ITEMS=".claude .vscode .jj"
 for arg in "$@"; do
-    PRESERVE_ITEMS="$PRESERVE_ITEMS $arg"
+  PRESERVE_ITEMS="$PRESERVE_ITEMS $arg"
 done
 
 # Array to track moved items and their temporary names
