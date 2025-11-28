@@ -26,9 +26,12 @@ val command_line_options : (string * Arg.spec * string) list
 
 (* Addressing modes *)
 
+type addressing_mode_shift = One | Two | Three | Four
+
 type addressing_mode =
-  | Iindexed of int                     (* reg + displ *)
-  | Ibased of string * int              (* global var + displ *)
+  | Iindexed of int                          (* reg + displ *)
+  | Iindexed2scaled of addressing_mode_shift (* reg + reg lsl shift *)
+  | Ibased of string * int                   (* global var + displ *)
 
 (* We do not support the reg + shifted reg addressing mode, because
    what we really need is reg + shifted reg + displ,

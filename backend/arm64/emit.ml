@@ -152,7 +152,7 @@ module DSL : sig
 
   val emit_mem_sp_offset : int -> Arm64_ast.Operand.t
 
-  val emit_addressing : addressing_mode -> Reg.t -> Arm64_ast.Operand.t
+  val emit_addressing : addressing_mode -> Reg.t array -> Arm64_ast.Operand.t
 
   val emit_mem_symbol :
     ?offset:int ->
@@ -299,9 +299,10 @@ end = struct
 
   let emit_mem_sp_offset ofs = mem_offset ~base:Arm64_ast.Reg.sp ~offset:ofs
 
-  let emit_addressing addr r =
+  let emit_addressing addr args =
     match addr with
-    | Iindexed ofs -> mem_offset ~base:(translate_reg r) ~offset:ofs
+    | Iindexed ofs -> mem_offset ~base:(translate_reg args.(0)) ~offset:ofs
+    | Iindexed2scaled _ -> assert false
     | Ibased (s, ofs) ->
       assert (not !Clflags.dlcode);
       (* see selection.ml *)
@@ -309,7 +310,7 @@ end = struct
         Arm64_ast.Symbol.create ~reloc:LOWER_TWELVE ~offset:ofs
           (S.encode (S.create s))
       in
-      mem_symbol ~base:(translate_reg r) ~symbol:sym
+      mem_symbol ~base:(translate_reg args.(0)) ~symbol:sym
 
   let emit_mem_symbol ?offset ?reloc r s =
     let sym = S.encode s in
@@ -1200,12 +1201,18 @@ module BR = Branch_relaxation.Make (struct
       if Config.runtime5 && stack_ofs > 0 then 5 else if alloc then 3 else 5
     | Lop (Stackoffset _) -> 2
     | Lop (Load { memory_chunk; addressing_mode; is_atomic; mutability = _ }) ->
-      let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
+      let based =
+        match addressing_mode with
+        | Iindexed _ | Iindexed2scaled _ -> 0
+        | Ibased _ -> 1
       and barrier = if is_atomic then 1 else 0
       and single = memory_access_size memory_chunk in
       based + barrier + single
     | Lop (Store (memory_chunk, addressing_mode, assignment)) ->
-      let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
+      let based =
+        match addressing_mode with
+        | Iindexed _ | Iindexed2scaled _ -> 0
+        | Ibased _ -> 1
       and barrier =
         match memory_chunk, assignment with
         | (Word_int | Word_val), true -> 1
@@ -1370,18 +1377,18 @@ let assembly_code_for_allocation i ~local ~n ~far ~dbginfo =
     DSL.ins I.LDR
       [| DSL.emit_reg reg_tmp1;
          DSL.emit_addressing (Iindexed domain_local_limit_offset)
-           reg_domain_state_ptr
+           [| reg_domain_state_ptr |]
       |];
     DSL.ins I.LDR
       [| DSL.emit_reg r;
          DSL.emit_addressing (Iindexed domain_local_sp_offset)
-           reg_domain_state_ptr
+           [| reg_domain_state_ptr |]
       |];
     emit_subimm r r n;
     DSL.ins I.STR
       [| DSL.emit_reg r;
          DSL.emit_addressing (Iindexed domain_local_sp_offset)
-           reg_domain_state_ptr
+           [| reg_domain_state_ptr |]
       |];
     DSL.ins I.CMP [| DSL.emit_reg r; DSL.emit_reg reg_tmp1 |];
     let lbl_call = L.create Text in
@@ -1391,7 +1398,7 @@ let assembly_code_for_allocation i ~local ~n ~far ~dbginfo =
     DSL.ins I.LDR
       [| DSL.emit_reg reg_tmp1;
          DSL.emit_addressing (Iindexed domain_local_top_offset)
-           reg_domain_state_ptr
+           [| reg_domain_state_ptr |]
       |];
     DSL.ins I.ADD [| DSL.emit_reg r; DSL.emit_reg r; DSL.emit_reg reg_tmp1 |];
     DSL.ins I.ADD [| DSL.emit_reg r; DSL.emit_reg r; DSL.imm 8 |];
@@ -1411,7 +1418,7 @@ let assembly_code_for_allocation i ~local ~n ~far ~dbginfo =
       let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
       DSL.ins I.LDR
         [| DSL.emit_reg reg_tmp1;
-           DSL.emit_addressing (Iindexed offset) reg_domain_state_ptr
+           DSL.emit_addressing (Iindexed offset) [| reg_domain_state_ptr |]
         |];
       emit_subimm reg_alloc_ptr reg_alloc_ptr n;
       DSL.ins I.CMP [| DSL.emit_reg reg_alloc_ptr; DSL.emit_reg reg_tmp1 |];
@@ -1450,7 +1457,7 @@ let assembly_code_for_poll i ~far ~return_label =
   let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
   DSL.ins I.LDR
     [| DSL.emit_reg reg_tmp1;
-       DSL.emit_addressing (Iindexed offset) reg_domain_state_ptr
+       DSL.emit_addressing (Iindexed offset) [| reg_domain_state_ptr |]
     |];
   DSL.ins I.CMP [| DSL.emit_reg reg_alloc_ptr; DSL.emit_reg reg_tmp1 |];
   (if not far
@@ -1770,7 +1777,7 @@ let emit_instr i =
         let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
         DSL.ins I.LDR
           [| DSL.emit_reg reg_tmp1;
-             DSL.emit_addressing (Iindexed offset) reg_domain_state_ptr
+             DSL.emit_addressing (Iindexed offset) [| reg_domain_state_ptr |]
           |];
         DSL.ins I.MOV [| DSL.sp; DSL.emit_reg reg_tmp1 |])
       else D.cfi_remember_state ();
@@ -1787,38 +1794,39 @@ let emit_instr i =
       || Cmm.equal_memory_chunk memory_chunk Cmm.Word_val
       || not is_atomic);
     let dst = i.res.(0) in
-    let base =
+    let args =
       match addressing_mode with
-      | Iindexed _ -> i.arg.(0)
+      | Iindexed _ -> [| i.arg.(0) |]
+      | Iindexed2scaled _ -> [| i.arg.(0); i.arg.(1) |]
       | Ibased (s, ofs) ->
         assert (not !Clflags.dlcode);
         (* see selection_utils.ml *)
         DSL.ins I.ADRP
           [| DSL.emit_reg reg_tmp1; DSL.emit_symbol ~offset:ofs (S.create s) |];
-        reg_tmp1
+        [| reg_tmp1 |]
     in
     match memory_chunk with
     | Byte_unsigned ->
       DSL.ins I.LDRB
-        [| DSL.emit_reg_w dst; DSL.emit_addressing addressing_mode base |]
+        [| DSL.emit_reg_w dst; DSL.emit_addressing addressing_mode args |]
     | Byte_signed ->
       DSL.ins I.LDRSB
-        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode base |]
+        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
     | Sixteen_unsigned ->
       DSL.ins I.LDRH
-        [| DSL.emit_reg_w dst; DSL.emit_addressing addressing_mode base |]
+        [| DSL.emit_reg_w dst; DSL.emit_addressing addressing_mode args |]
     | Sixteen_signed ->
       DSL.ins I.LDRSH
-        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode base |]
+        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
     | Thirtytwo_unsigned ->
       DSL.ins I.LDR
-        [| DSL.emit_reg_w dst; DSL.emit_addressing addressing_mode base |]
+        [| DSL.emit_reg_w dst; DSL.emit_addressing addressing_mode args |]
     | Thirtytwo_signed ->
       DSL.ins I.LDRSW
-        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode base |]
+        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
     | Single { reg = Float64 } ->
       DSL.check_reg Float dst;
-      DSL.ins I.LDR [| DSL.reg_s_7; DSL.emit_addressing addressing_mode base |];
+      DSL.ins I.LDR [| DSL.reg_s_7; DSL.emit_addressing addressing_mode args |];
       DSL.ins I.FCVT [| DSL.emit_reg dst; DSL.reg_s_7 |]
     | Word_int | Word_val ->
       if is_atomic
@@ -1828,24 +1836,27 @@ let emit_instr i =
         DSL.ins I.LDAR [| DSL.emit_reg dst; DSL.emit_mem i.arg.(0) |])
       else
         DSL.ins I.LDR
-          [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode base |]
+          [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
     | Double ->
       DSL.ins I.LDR
-        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode base |]
+        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
     | Single { reg = Float32 } ->
       DSL.check_reg Float32 dst;
       DSL.ins I.LDR
-        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode base |]
+        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
     | Onetwentyeight_aligned ->
       DSL.check_reg Vec128 dst;
       DSL.ins I.LDR
-        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode base |]
+        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
     | Onetwentyeight_unaligned ->
       DSL.check_reg Vec128 dst;
       (match addressing_mode with
       | Iindexed n ->
         DSL.ins I.ADD
           [| DSL.emit_reg reg_tmp1; DSL.emit_reg i.arg.(0); DSL.imm n |]
+      | Iindexed2scaled _ -> 
+        (* TODO: implement *)
+        failwith "TODO"
       | Ibased (s, offset) ->
         assert (not !Clflags.dlcode);
         (* see selection_utils.ml *)
@@ -1864,44 +1875,48 @@ let emit_instr i =
     (* NB: assignments other than Word_int and Word_val do not follow the
        Multicore OCaml memory model and so do not emit a barrier *)
     let src = i.arg.(0) in
-    let base =
+    let args =
       match addr with
-      | Iindexed _ -> i.arg.(1)
+      | Iindexed _ -> [| i.arg.(1) |]
+      | Iindexed2scaled _ -> [| i.arg.(1); i.arg.(2) |]
       | Ibased (s, ofs) ->
         assert (not !Clflags.dlcode);
         DSL.ins I.ADRP
           [| DSL.emit_reg reg_tmp1; DSL.emit_symbol ~offset:ofs (S.create s) |];
-        reg_tmp1
+        [| reg_tmp1 |]
     in
     match size with
     | Byte_unsigned | Byte_signed ->
-      DSL.ins I.STRB [| DSL.emit_reg_w src; DSL.emit_addressing addr base |]
+      DSL.ins I.STRB [| DSL.emit_reg_w src; DSL.emit_addressing addr args |]
     | Sixteen_unsigned | Sixteen_signed ->
-      DSL.ins I.STRH [| DSL.emit_reg_w src; DSL.emit_addressing addr base |]
+      DSL.ins I.STRH [| DSL.emit_reg_w src; DSL.emit_addressing addr args |]
     | Thirtytwo_unsigned | Thirtytwo_signed ->
-      DSL.ins I.STR [| DSL.emit_reg_w src; DSL.emit_addressing addr base |]
+      DSL.ins I.STR [| DSL.emit_reg_w src; DSL.emit_addressing addr args |]
     | Single { reg = Float64 } ->
       DSL.check_reg Float src;
       DSL.ins I.FCVT [| DSL.reg_s_7; DSL.emit_reg src |];
-      DSL.ins I.STR [| DSL.reg_s_7; DSL.emit_addressing addr base |]
+      DSL.ins I.STR [| DSL.reg_s_7; DSL.emit_addressing addr args |]
     | Word_int | Word_val ->
       (* memory model barrier for non-initializing store *)
       if assignment then DSL.ins (I.DMB ISHLD) [||];
-      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr base |]
+      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr args |]
     | Double ->
-      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr base |]
+      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr args |]
     | Single { reg = Float32 } ->
       DSL.check_reg Float32 src;
-      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr base |]
+      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr args |]
     | Onetwentyeight_aligned ->
       DSL.check_reg Vec128 src;
-      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr base |]
+      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr args |]
     | Onetwentyeight_unaligned ->
       DSL.check_reg Vec128 src;
       (match addr with
       | Iindexed n ->
         DSL.ins I.ADD
           [| DSL.emit_reg reg_tmp1; DSL.emit_reg i.arg.(1); DSL.imm n |]
+      | Iindexed2scaled _ -> 
+        (* TODO: implement *)
+        failwith "TODO"
       | Ibased (s, offset) ->
         assert (not !Clflags.dlcode);
         (* see selection_utils.ml *)
@@ -1926,13 +1941,13 @@ let emit_instr i =
     let offset = Domainstate.(idx_of_field Domain_local_sp) * 8 in
     DSL.ins I.LDR
       [| DSL.emit_reg i.res.(0);
-         DSL.emit_addressing (Iindexed offset) reg_domain_state_ptr
+         DSL.emit_addressing (Iindexed offset) [| reg_domain_state_ptr |]
       |]
   | Lop End_region ->
     let offset = Domainstate.(idx_of_field Domain_local_sp) * 8 in
     DSL.ins I.STR
       [| DSL.emit_reg i.arg.(0);
-         DSL.emit_addressing (Iindexed offset) reg_domain_state_ptr
+         DSL.emit_addressing (Iindexed offset) [| reg_domain_state_ptr |]
       |]
   | Lop Poll -> assembly_code_for_poll i ~far:false ~return_label:None
   | Lop Pause -> DSL.ins I.YIELD [||]
@@ -2141,7 +2156,7 @@ let emit_instr i =
       let offset = Domainstate.(idx_of_field Domain_dls_state) * 8 in
       DSL.ins I.LDR
         [| DSL.emit_reg i.res.(0);
-           DSL.emit_addressing (Iindexed offset) reg_domain_state_ptr
+           DSL.emit_addressing (Iindexed offset) [| reg_domain_state_ptr |]
         |]
     else Misc.fatal_error "Dls is not supported in runtime4."
   | Lop (Csel tst) -> (
@@ -2335,7 +2350,7 @@ let emit_instr i =
     let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
     DSL.ins I.LDR
       [| DSL.emit_reg reg_tmp1;
-         DSL.emit_addressing (Iindexed offset) reg_domain_state_ptr
+         DSL.emit_addressing (Iindexed offset) [| reg_domain_state_ptr |]
       |];
     emit_addimm reg_tmp1 reg_tmp1 f;
     DSL.ins I.CMP [| DSL.sp; DSL.emit_reg reg_tmp1 |];

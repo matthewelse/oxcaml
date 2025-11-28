@@ -44,9 +44,23 @@ let command_line_options = [
 
 (* Addressing modes *)
 
+type addressing_mode_shift = One | Two | Three | Four
+
+let addressing_mode_shift_to_int = function
+  | One -> 1 | Two -> 2  | Three -> 3 | Four -> 4
+
+let addressing_mode_shift_equal x y = 
+  match x, y with
+  | One, One -> true
+  | Two, Two -> true
+  | Three, Three -> true
+  | Four, Four -> true
+  | (One | Two | Three | Four), _ -> false 
+
 type addressing_mode =
-  | Iindexed of int                     (* reg + displ *)
-  | Ibased of string * int              (* global var + displ *)
+  | Iindexed of int                          (* reg + displ *)
+  | Iindexed2scaled of addressing_mode_shift (* reg + reg lsl shift *)
+  | Ibased of string * int                   (* global var + displ *)
 
 (* We do not support the reg + shifted reg addressing mode, because
    what we really need is reg + shifted reg + displ,
@@ -111,9 +125,11 @@ let offset_addressing addr delta =
   match addr with
   | Iindexed i -> Iindexed (i + delta)
   | Ibased (sym, i) -> Ibased (sym, i + delta)
+  | Iindexed2scaled _ -> Misc.fatal_error "Arch.offset_addressing: cannot add an offset to [Iindexed2scaled]"
 
 let num_args_addressing = function
   | Iindexed _ -> 1
+  | Iindexed2scaled _ -> 2
   | Ibased _ -> 0
 
 let addressing_displacement_for_llvmize addr =
@@ -125,7 +141,7 @@ let addressing_displacement_for_llvmize addr =
   else
     match addr with
     | Iindexed d -> d
-    | Ibased _ ->
+    | Ibased _ | Iindexed2scaled _ ->
       Misc.fatal_error
         "Arch.displacement_addressing_for_llvmize: unexpected addressing mode"
 
@@ -136,6 +152,11 @@ let print_addressing printreg addr ppf arg =
   | Iindexed n ->
       printreg ppf arg.(0);
       if n <> 0 then fprintf ppf " + %i" n
+  | Iindexed2scaled n ->
+      printreg ppf arg.(0);
+      fprintf ppf " + (";
+      printreg ppf arg.(1);
+      fprintf ppf " lsl %i)" (addressing_mode_shift_to_int n)
   | Ibased(s, 0) ->
       fprintf ppf "\"%s\"" s
   | Ibased(s, n) ->
@@ -249,7 +270,9 @@ let equal_addressing_mode left right =
   | Ibased (left_string, left_int), Ibased (right_string, right_int) ->
     String.equal left_string right_string
     && Int.equal left_int right_int
-  | (Iindexed _ | Ibased _), _ -> false
+  | Iindexed2scaled left_scale, Iindexed2scaled right_scale ->
+    addressing_mode_shift_equal left_scale  right_scale
+  | (Iindexed _ | Ibased _ | Iindexed2scaled _), _ -> false
 
 let equal_arith_operation left right =
   match left, right with
@@ -406,7 +429,9 @@ let equal_addressing_mode_without_displ (addressing_mode_1: addressing_mode)
   match addressing_mode_1, addressing_mode_2 with
   | Iindexed _, Iindexed _ -> true
   | Ibased (var1, _), Ibased (var2, _) -> String.equal var1 var2
-  | (Iindexed _ | Ibased _), _ -> false
+  | Iindexed2scaled scale1, Iindexed2scaled scale2 -> 
+    addressing_mode_shift_equal scale1 scale2
+  | (Iindexed _ | Ibased _ | Iindexed2scaled _), _ -> false
 
 let addressing_offset_in_bytes (_addressing_mode_1: addressing_mode)
       (_addressing_mode_2 : addressing_mode) ~arg_offset_in_bytes:_ _ _ =
