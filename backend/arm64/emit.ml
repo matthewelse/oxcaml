@@ -1852,35 +1852,10 @@ let emit_instr i =
       DSL.check_reg Float32 dst;
       DSL.ins I.LDR
         [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
-    | Onetwentyeight_aligned ->
+    | Onetwentyeight_aligned | Onetwentyeight_unaligned ->
       DSL.check_reg Vec128 dst;
       DSL.ins I.LDR
         [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
-    | Onetwentyeight_unaligned ->
-      DSL.check_reg Vec128 dst;
-      (match addressing_mode with
-      | Iindexed n ->
-        DSL.ins I.ADD
-          [| DSL.emit_reg reg_tmp1; DSL.emit_reg i.arg.(0); DSL.imm n |]
-      | Iindexed2scaled shift ->
-        let shift_amount = addressing_mode_shift_to_int shift in
-        DSL.ins I.ADD
-          [| DSL.emit_reg reg_tmp1;
-             DSL.emit_reg i.arg.(0);
-             DSL.emit_reg i.arg.(1);
-             DSL.emit_shift LSL shift_amount
-          |]
-      | Ibased (s, offset) ->
-        assert (not !Clflags.dlcode);
-        (* see selection_utils.ml *)
-        let s = S.create s in
-        DSL.ins I.ADRP [| DSL.emit_reg reg_tmp1; DSL.emit_symbol ~offset s |];
-        DSL.ins I.ADD
-          [| DSL.emit_reg reg_tmp1;
-             DSL.emit_reg reg_tmp1;
-             DSL.emit_symbol ~reloc:LOWER_TWELVE ~offset s
-          |]);
-      DSL.ins I.LDR [| DSL.emit_reg dst; DSL.emit_mem reg_tmp1 |]
     | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
     | Fivetwelve_unaligned ->
       Misc.fatal_error "arm64: got 256/512 bit vector")
@@ -1918,34 +1893,9 @@ let emit_instr i =
     | Single { reg = Float32 } ->
       DSL.check_reg Float32 src;
       DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr args |]
-    | Onetwentyeight_aligned ->
+    | Onetwentyeight_aligned | Onetwentyeight_unaligned ->
       DSL.check_reg Vec128 src;
       DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr args |]
-    | Onetwentyeight_unaligned ->
-      DSL.check_reg Vec128 src;
-      (match addr with
-      | Iindexed n ->
-        DSL.ins I.ADD
-          [| DSL.emit_reg reg_tmp1; DSL.emit_reg i.arg.(1); DSL.imm n |]
-      | Iindexed2scaled shift ->
-        let shift_amount = addressing_mode_shift_to_int shift in
-        DSL.ins I.ADD
-          [| DSL.emit_reg reg_tmp1;
-             DSL.emit_reg i.arg.(1);
-             DSL.emit_reg i.arg.(2);
-             DSL.emit_shift LSL shift_amount
-          |]
-      | Ibased (s, offset) ->
-        assert (not !Clflags.dlcode);
-        (* see selection_utils.ml *)
-        let s = S.create s in
-        DSL.ins I.ADRP [| DSL.emit_reg reg_tmp1; DSL.emit_symbol ~offset s |];
-        DSL.ins I.ADD
-          [| DSL.emit_reg reg_tmp1;
-             DSL.emit_reg reg_tmp1;
-             DSL.emit_symbol ~reloc:LOWER_TWELVE ~offset s
-          |]);
-      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_mem reg_tmp1 |]
     | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
     | Fivetwelve_unaligned ->
       Misc.fatal_error "arm64: got 256/512 bit vector")
