@@ -101,6 +101,11 @@ module Operand : sig
         | ASR
         | LSR
     end
+
+    type t =
+      { kind : Kind.t;
+        amount : int
+      }
   end
 end
 
@@ -334,6 +339,9 @@ module DSL : sig
   val mem : base:Reg.t -> Operand.t
 
   val mem_offset : base:Reg.t -> offset:int -> Operand.t
+
+  val mem_indexed :
+    base:Reg.t -> index:Reg.t -> shift:Operand.Shift.t -> Operand.t
 
   val mem_symbol : base:Reg.t -> symbol:Symbol.t -> Operand.t
 

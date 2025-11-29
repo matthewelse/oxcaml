@@ -28,6 +28,8 @@ val command_line_options : (string * Arg.spec * string) list
 
 type addressing_mode_shift = One | Two | Three | Four
 
+val addressing_mode_shift_to_int : addressing_mode_shift -> int
+
 type addressing_mode =
   | Iindexed of int                          (* reg + displ *)
   | Iindexed2scaled of addressing_mode_shift (* reg + reg lsl shift *)

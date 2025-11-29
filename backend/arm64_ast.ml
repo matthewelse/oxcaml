@@ -744,6 +744,7 @@ module Operand = struct
     type t =
       | Reg of Reg.t
       | Offset of Reg.t * Offset.t
+      | Indexed of Reg.t * Reg.t * Shift.t
       | Pre of Reg.t * Offset.t
       | Post of Reg.t * Offset.t
       | Literal of label
@@ -753,6 +754,9 @@ module Operand = struct
       match t with
       | Reg r -> fprintf ppf "[%s]" (Reg.name r)
       | Offset (r, off) -> fprintf ppf "[%s, %a]" (Reg.name r) Offset.print off
+      | Indexed (base, index, shift) ->
+        fprintf ppf "[%s, %s, %a]" (Reg.name base) (Reg.name index) Shift.print
+          shift
       | Pre (r, off) -> fprintf ppf "[%s, %a]!" (Reg.name r) Offset.print off
       | Post (r, off) -> fprintf ppf "[%s], %a" (Reg.name r) Offset.print off
       | Literal l -> fprintf ppf "%s" l
@@ -922,6 +926,9 @@ module DSL = struct
 
   let mem_offset ~base ~offset =
     Operand.(Mem (Addressing_mode.Offset (base, Imm offset)))
+
+  let mem_indexed ~base ~index ~shift =
+    Operand.(Mem (Addressing_mode.Indexed (base, index, shift)))
 
   let mem_symbol ~base ~symbol =
     Operand.(Mem (Addressing_mode.Offset (base, Symbol symbol)))

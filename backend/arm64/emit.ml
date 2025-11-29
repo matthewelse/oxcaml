@@ -302,7 +302,15 @@ end = struct
   let emit_addressing addr args =
     match addr with
     | Iindexed ofs -> mem_offset ~base:(translate_reg args.(0)) ~offset:ofs
-    | Iindexed2scaled _ -> assert false
+    | Iindexed2scaled shift ->
+      let shift_amount = addressing_mode_shift_to_int shift in
+      let shift_op =
+        { Arm64_ast.Operand.Shift.kind = LSL; amount = shift_amount }
+      in
+      mem_indexed
+        ~base:(translate_reg args.(0))
+        ~index:(translate_reg args.(1))
+        ~shift:shift_op
     | Ibased (s, ofs) ->
       assert (not !Clflags.dlcode);
       (* see selection.ml *)
@@ -1854,9 +1862,14 @@ let emit_instr i =
       | Iindexed n ->
         DSL.ins I.ADD
           [| DSL.emit_reg reg_tmp1; DSL.emit_reg i.arg.(0); DSL.imm n |]
-      | Iindexed2scaled _ -> 
-        (* TODO: implement *)
-        failwith "TODO"
+      | Iindexed2scaled shift ->
+        let shift_amount = addressing_mode_shift_to_int shift in
+        DSL.ins I.ADD
+          [| DSL.emit_reg reg_tmp1;
+             DSL.emit_reg i.arg.(0);
+             DSL.emit_reg i.arg.(1);
+             DSL.emit_shift LSL shift_amount
+          |]
       | Ibased (s, offset) ->
         assert (not !Clflags.dlcode);
         (* see selection_utils.ml *)
@@ -1914,9 +1927,14 @@ let emit_instr i =
       | Iindexed n ->
         DSL.ins I.ADD
           [| DSL.emit_reg reg_tmp1; DSL.emit_reg i.arg.(1); DSL.imm n |]
-      | Iindexed2scaled _ -> 
-        (* TODO: implement *)
-        failwith "TODO"
+      | Iindexed2scaled shift ->
+        let shift_amount = addressing_mode_shift_to_int shift in
+        DSL.ins I.ADD
+          [| DSL.emit_reg reg_tmp1;
+             DSL.emit_reg i.arg.(1);
+             DSL.emit_reg i.arg.(2);
+             DSL.emit_shift LSL shift_amount
+          |]
       | Ibased (s, offset) ->
         assert (not !Clflags.dlcode);
         (* see selection_utils.ml *)
