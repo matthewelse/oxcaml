@@ -95,7 +95,7 @@ let effects_of (expr : Cmm.expression) :
     Effects_of_all_expressions args
   | _ -> Use_default
 
-let select_addressing' chunk (expr : Cmm.expression) :
+let select_addressing' (chunk : Cmm.memory_chunk) (expr : Cmm.expression) :
     addressing_mode * Cmm.expression =
   match expr with
   | Cop ((Caddv | Cadda), [Cconst_symbol (s, _); Cconst_int (n, _)], _)
@@ -109,6 +109,27 @@ let select_addressing' chunk (expr : Cmm.expression) :
         dbg )
     when is_offset chunk n ->
     Iindexed n, Cop (op, [arg1; arg2], dbg)
+  | Cop ((Caddv | Cadda), [arg1; Cop (Clsl, [arg2; Cconst_int (n, _)], _)], _)
+  | Cop ((Caddv | Cadda), [Cop (Clsl, [arg2; Cconst_int (n, _)], _); arg1], _)
+    -> (
+    (* Per the ARMv8 spec, for a memory load of [n] bytes, you can shift the
+       offset by [log2 n + 1] bits. *)
+    let shift_size : Arch.addressing_mode_shift option =
+      match chunk with
+      | Byte_signed | Byte_unsigned -> None
+      | Sixteen_signed | Sixteen_unsigned -> Some One
+      | Thirtytwo_signed | Thirtytwo_unsigned | Single { reg = Float32 } ->
+        Some Two
+      | Word_int | Word_val | Double | Single { reg = Float64 } -> Some Three
+      | Onetwentyeight_aligned | Onetwentyeight_unaligned -> Some Four
+      | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
+      | Fivetwelve_unaligned ->
+        None
+    in
+    match shift_size with
+    | Some shift_size when n = addressing_mode_shift_to_int shift_size ->
+      Iindexed2scaled shift_size, Ctuple [arg1; arg2]
+    | Some _ | None -> Iindexed 0, expr)
   | Cconst_symbol (s, _) when use_direct_addressing s ->
     Ibased (s.sym_name, 0), Ctuple []
   | arg -> Iindexed 0, arg
