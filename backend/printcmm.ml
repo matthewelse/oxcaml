@@ -140,6 +140,7 @@ let chunk = function
   | Sixteen_signed -> "signed int16"
   | Thirtytwo_unsigned -> "unsigned int32"
   | Thirtytwo_signed -> "signed int32"
+  | Sixtyfour_unsigned -> "unsigned int64"
   | Onetwentyeight_unaligned -> "unaligned vec128"
   | Onetwentyeight_aligned -> "aligned vec128"
   | Twofiftysix_unaligned -> "unaligned vec256"

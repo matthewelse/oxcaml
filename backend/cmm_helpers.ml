@@ -1471,6 +1471,7 @@ let memory_chunk_width_in_bytes : memory_chunk -> int = function
   | Sixteen_unsigned | Sixteen_signed -> 2
   | Thirtytwo_unsigned | Thirtytwo_signed -> 4
   | Single { reg = Float64 | Float32 } -> 4
+  | Sixtyfour_unsigned -> 8
   | Word_int -> size_int
   | Word_val -> size_addr
   | Double -> size_float
@@ -1859,7 +1860,10 @@ let unboxed_float32_array_ref =
   unboxed_packed_array_ref ~memory_chunk:(Single { reg = Float32 })
 
 let unboxed_int64_or_nativeint_array_ref arr ~array_index dbg =
-  int_array_ref arr array_index dbg
+  Cop
+    ( mk_load_mut Sixtyfour_unsigned,
+      [array_indexing log2_size_addr arr array_index dbg],
+      dbg )
 
 let unboxed_packed_array_set arr ~index ~new_value dbg ~memory_chunk =
   bind "arr" arr (fun arr ->
@@ -1877,7 +1881,10 @@ let unboxed_float32_array_set =
   unboxed_packed_array_set ~memory_chunk:(Single { reg = Float32 })
 
 let unboxed_int64_or_nativeint_array_set arr ~index ~new_value dbg =
-  int_array_set arr index new_value dbg
+  Cop
+    ( Cstore (Sixtyfour_unsigned, Assignment),
+      [array_indexing log2_size_addr arr index dbg; new_value],
+      dbg )
 
 let get_field_unboxed ~dbg memory_chunk mutability block ~index_in_words =
   if Arch.big_endian && memory_chunk_width_in_bytes memory_chunk <> size_addr
@@ -2150,6 +2157,7 @@ let memory_chunk_size_in_words_for_mixed_block = function
          same width as a value.";
     1
   | Word_int | Word_val -> 1
+  | Sixtyfour_unsigned -> 1
   | Onetwentyeight_unaligned | Onetwentyeight_aligned -> 2
   | Twofiftysix_unaligned | Twofiftysix_aligned -> 4
   | Fivetwelve_unaligned | Fivetwelve_aligned -> 8
@@ -2163,7 +2171,7 @@ let alloc_generic_set_fn block ofs newval memory_chunk dbg =
   | Word_val ->
     (* Values must go through "caml_initialize" *)
     addr_array_initialize block ofs newval dbg
-  | Word_int -> generic_case ()
+  | Word_int | Sixtyfour_unsigned -> generic_case ()
   (* Generic cases that may differ under big endian archs *)
   | Single _ | Double | Thirtytwo_unsigned | Thirtytwo_signed
   | Onetwentyeight_unaligned | Onetwentyeight_aligned | Twofiftysix_unaligned
@@ -2278,7 +2286,7 @@ let make_mixed_alloc ~mode dbg ~tag ~value_prefix_size args args_memory_chunks =
         then
           (* regular scanned part of a block *)
           match memory_chunk with
-          | Word_int | Word_val -> ok ()
+          | Word_int | Word_val | Sixtyfour_unsigned -> ok ()
           | Byte_unsigned | Byte_signed | Sixteen_unsigned | Sixteen_signed
           | Thirtytwo_unsigned | Thirtytwo_signed | Single _ | Double
           | Onetwentyeight_unaligned | Onetwentyeight_aligned
@@ -2292,7 +2300,7 @@ let make_mixed_alloc ~mode dbg ~tag ~value_prefix_size args args_memory_chunks =
           | Onetwentyeight_unaligned | Onetwentyeight_aligned
           | Twofiftysix_unaligned | Twofiftysix_aligned | Fivetwelve_unaligned
           | Fivetwelve_aligned | Single _ | Byte_unsigned | Byte_signed
-          | Sixteen_unsigned | Sixteen_signed ->
+          | Sixteen_unsigned | Sixteen_signed | Sixtyfour_unsigned ->
             ok ()
           | Word_val -> error "the flat suffix of a mixed block")
       0 args_memory_chunks

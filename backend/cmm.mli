@@ -277,6 +277,7 @@ type memory_chunk =
   | Sixteen_signed
   | Thirtytwo_unsigned
   | Thirtytwo_signed
+  | Sixtyfour_unsigned
   | Word_int (* integer or pointer outside heap *)
   | Word_val (* pointer inside heap or encoded int *)
   | Single of { reg : float_width }

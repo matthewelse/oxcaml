@@ -1168,8 +1168,8 @@ module BR = Branch_relaxation.Make (struct
     | Single { reg = Float64 } -> 2
     | Single { reg = Float32 } -> 1
     | Byte_unsigned | Byte_signed | Sixteen_unsigned | Sixteen_signed
-    | Thirtytwo_unsigned | Thirtytwo_signed | Word_int | Word_val | Double
-    | Onetwentyeight_unaligned | Onetwentyeight_aligned ->
+    | Thirtytwo_unsigned | Thirtytwo_signed | Sixtyfour_unsigned | Word_int
+    | Word_val | Double | Onetwentyeight_unaligned | Onetwentyeight_aligned ->
       1
     | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
     | Fivetwelve_unaligned ->
@@ -1227,7 +1227,8 @@ module BR = Branch_relaxation.Make (struct
         | (Word_int | Word_val), false -> 0
         | ( ( Byte_unsigned | Byte_signed | Sixteen_unsigned | Sixteen_signed
             | Thirtytwo_unsigned | Thirtytwo_signed | Single _ | Double
-            | Onetwentyeight_unaligned | Onetwentyeight_aligned ),
+            | Onetwentyeight_unaligned | Onetwentyeight_aligned
+            | Sixtyfour_unsigned ),
             _ ) ->
           0
         | ( ( Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
@@ -1832,6 +1833,9 @@ let emit_instr i =
     | Thirtytwo_signed ->
       DSL.ins I.LDRSW
         [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
+    | Sixtyfour_unsigned ->
+      DSL.ins I.LDR
+        [| DSL.emit_reg dst; DSL.emit_addressing addressing_mode args |]
     | Single { reg = Float64 } ->
       DSL.check_reg Float dst;
       DSL.ins I.LDR [| DSL.reg_s_7; DSL.emit_addressing addressing_mode args |];
@@ -1884,6 +1888,8 @@ let emit_instr i =
       DSL.check_reg Float src;
       DSL.ins I.FCVT [| DSL.reg_s_7; DSL.emit_reg src |];
       DSL.ins I.STR [| DSL.reg_s_7; DSL.emit_addressing addr args |]
+    | Sixtyfour_unsigned ->
+      DSL.ins I.STR [| DSL.emit_reg src; DSL.emit_addressing addr args |]
     | Word_int | Word_val ->
       (* memory model barrier for non-initializing store *)
       if assignment then DSL.ins (I.DMB ISHLD) [||];

@@ -35,7 +35,8 @@ let is_offset chunk n =
      | Thirtytwo_unsigned | Thirtytwo_signed
      | Single { reg = Float64 | Float32 } ->
        n land 3 = 0 && n lsr 2 < 0x1000
-     | Word_int | Word_val | Double -> n land 7 = 0 && n lsr 3 < 0x1000
+     | Sixtyfour_unsigned | Word_int | Word_val | Double ->
+       n land 7 = 0 && n lsr 3 < 0x1000
      | Onetwentyeight_aligned | Onetwentyeight_unaligned ->
        n land 15 = 0 && n lsr 4 < 0x1000
      | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
@@ -120,7 +121,10 @@ let select_addressing' (chunk : Cmm.memory_chunk) (expr : Cmm.expression) :
       | Sixteen_signed | Sixteen_unsigned -> Some One
       | Thirtytwo_signed | Thirtytwo_unsigned | Single { reg = Float32 } ->
         Some Two
-      | Word_int | Word_val | Double | Single { reg = Float64 } -> Some Three
+      | Word_int | Word_val | Double
+      | Single { reg = Float64 }
+      | Sixtyfour_unsigned ->
+        Some Three
       | Onetwentyeight_aligned | Onetwentyeight_unaligned -> Some Four
       | Twofiftysix_aligned | Twofiftysix_unaligned | Fivetwelve_aligned
       | Fivetwelve_unaligned ->
