@@ -357,6 +357,14 @@ module Extended_machtype : sig
   val change_tagged_int_to_val : t -> machtype
 end
 
+val array_indexing :
+  ?typ:Cmm.machtype_component ->
+  int ->
+  expression ->
+  expression ->
+  Debuginfo.t ->
+  expression
+
 (** Allocations *)
 
 (** Allocate a block of regular values with the given tag *)

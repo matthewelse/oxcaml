@@ -279,14 +279,17 @@ let array_length ~dbg arr (kind : P.Array_kind.t) =
   | Naked_vec512s -> C.unboxed_vec512_array_length arr dbg
 
 let array_load_vector ~(vec_kind : Vector_types.Kind.t) ~dbg ~element_width_log2
-    arr index =
+    ~ptr_out_of_heap arr index =
   let index =
-    C.lsl_int (C.untag_int index dbg) (Cconst_int (element_width_log2, dbg)) dbg
+    C.array_indexing
+      ~typ:(if ptr_out_of_heap then Int else Addr)
+      element_width_log2 arr index dbg
   in
+  let zero : Cmm.expression = Cconst_int (0, dbg) in
   match vec_kind with
-  | Vec128 -> C.unaligned_load_128 arr index dbg
-  | Vec256 -> C.unaligned_load_256 arr index dbg
-  | Vec512 -> C.unaligned_load_512 arr index dbg
+  | Vec128 -> C.unaligned_load_128 index zero dbg ~ptr_out_of_heap
+  | Vec256 -> C.unaligned_load_256 index zero dbg ~ptr_out_of_heap
+  | Vec512 -> C.unaligned_load_512 index zero dbg ~ptr_out_of_heap
 
 let array_load_128 = array_load_vector ~vec_kind:Vec128
 
