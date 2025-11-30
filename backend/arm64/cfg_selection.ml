@@ -110,9 +110,14 @@ let select_addressing' (chunk : Cmm.memory_chunk) (expr : Cmm.expression) :
         dbg )
     when is_offset chunk n ->
     Iindexed n, Cop (op, [arg1; arg2], dbg)
-  | Cop ((Caddv | Cadda), [arg1; Cop (Clsl, [arg2; Cconst_int (n, _)], _)], _)
-  | Cop ((Caddv | Cadda), [Cop (Clsl, [arg2; Cconst_int (n, _)], _); arg1], _)
-    -> (
+  | Cop
+      ( (Caddv | Cadda | Caddi),
+        [arg1; Cop (Clsl, [arg2; Cconst_int (n, _)], _)],
+        _ )
+  | Cop
+      ( (Caddv | Cadda | Caddi),
+        [Cop (Clsl, [arg2; Cconst_int (n, _)], _); arg1],
+        _ ) -> (
     (* Per the ARMv8 spec, for a memory load of [n] bytes, you can shift the
        offset by [log2 n + 1] bits. *)
     let shift_size : Arch.addressing_mode_shift option =
@@ -134,7 +139,7 @@ let select_addressing' (chunk : Cmm.memory_chunk) (expr : Cmm.expression) :
     | Some shift_size when n = addressing_mode_shift_to_int shift_size ->
       Iindexed2scaled shift_size, Ctuple [arg1; arg2]
     | Some _ | None -> Iindexed 0, expr)
-  | Cop ((Caddv | Cadda), [arg1; arg2], _) ->
+  | Cop ((Caddv | Cadda | Caddi), [arg1; arg2], _) ->
     (* reg + reg with no shift: use Iindexed2scaled Zero *)
     Iindexed2scaled Zero, Ctuple [arg1; arg2]
   | Cconst_symbol (s, _) when use_direct_addressing s ->
