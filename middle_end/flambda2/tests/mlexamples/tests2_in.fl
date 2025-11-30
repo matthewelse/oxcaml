@@ -1,27 +1,29 @@
-let $camlTests2__first_const21 = Block 0 () in
-let code rec size(24)
-      f_0 (x : imm tagged)
-        my_closure my_region my_ghost_region my_depth
-        -> k * k1
-        : imm tagged =
-  let next_depth = rec_info (succ my_depth) in
-  let prim = %int_comp x > 0 in
-  let Pintcomp = %Tag_imm prim in
-  (let untagged = %untag_imm Pintcomp in
-   switch untagged
-     | 0 -> k (42)
-     | 1 -> k2)
-    where k2 =
-      ((let Psubint = x - 1 in
-        apply direct(f_0)
-          (my_closure ~ depth my_depth -> next_depth : _ -> imm tagged)
-            (Psubint)
-            -> k2 * k1)
-         where k2 (apply_result : imm tagged) =
-           let Paddint = 1 + apply_result in
-           cont k (Paddint))
-in
-(let f = closure f_0 @f in
+let $camlTests2__first_const = Block 0 () in
+(let code rec size(25)
+       f_0 (x : imm tagged)
+         my_closure _region _ghost_region my_depth
+         -> k1 * k2
+         : imm tagged =
+   let next_depth = rec_info (succ my_depth) in
+   (let prim = %int_comp x > 0 in
+    let int_greaterthan = %Tag_imm prim in
+    (let untagged = %untag_imm int_greaterthan in
+     switch untagged
+       | 0 -> k1 (42)
+       | 1 -> k4)
+      where k4 =
+        cont k3)
+     where k3 =
+       ((let int_sub = x - 1 in
+         apply direct(f_0)
+           (my_closure ~ depth my_depth -> next_depth : _ -> imm tagged)
+             (int_sub)
+             -> k3 * k2)
+          where k3 (apply_result : imm tagged) =
+            let int_add = 1 + apply_result in
+            cont k1 (int_add))
+ in
+ let f = closure f_0 @f in
  apply direct(f_0) unroll(10) (f : _ -> imm tagged) (5) -> k1 * error
    where k1 (n : imm tagged) =
      let Pmakeblock = %Block 0 (f, n) in
