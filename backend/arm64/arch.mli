@@ -26,7 +26,7 @@ val command_line_options : (string * Arg.spec * string) list
 
 (* Addressing modes *)
 
-type addressing_mode_shift = One | Two | Three | Four
+type addressing_mode_shift = Zero | One | Two | Three | Four
 
 val addressing_mode_shift_to_int : addressing_mode_shift -> int
 

@@ -44,18 +44,19 @@ let command_line_options = [
 
 (* Addressing modes *)
 
-type addressing_mode_shift = One | Two | Three | Four
+type addressing_mode_shift = Zero | One | Two | Three | Four
 
 let addressing_mode_shift_to_int = function
-  | One -> 1 | Two -> 2  | Three -> 3 | Four -> 4
+  | Zero -> 0 | One -> 1 | Two -> 2  | Three -> 3 | Four -> 4
 
-let addressing_mode_shift_equal x y = 
+let addressing_mode_shift_equal x y =
   match x, y with
+  | Zero, Zero -> true
   | One, One -> true
   | Two, Two -> true
   | Three, Three -> true
   | Four, Four -> true
-  | (One | Two | Three | Four), _ -> false 
+  | (Zero | One | Two | Three | Four), _ -> false 
 
 type addressing_mode =
   | Iindexed of int                          (* reg + displ *)

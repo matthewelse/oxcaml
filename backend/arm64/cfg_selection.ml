@@ -117,7 +117,7 @@ let select_addressing' (chunk : Cmm.memory_chunk) (expr : Cmm.expression) :
        offset by [log2 n + 1] bits. *)
     let shift_size : Arch.addressing_mode_shift option =
       match chunk with
-      | Byte_signed | Byte_unsigned -> None
+      | Byte_signed | Byte_unsigned -> Some Zero
       | Sixteen_signed | Sixteen_unsigned -> Some One
       | Thirtytwo_signed | Thirtytwo_unsigned | Single { reg = Float32 } ->
         Some Two
@@ -134,6 +134,9 @@ let select_addressing' (chunk : Cmm.memory_chunk) (expr : Cmm.expression) :
     | Some shift_size when n = addressing_mode_shift_to_int shift_size ->
       Iindexed2scaled shift_size, Ctuple [arg1; arg2]
     | Some _ | None -> Iindexed 0, expr)
+  | Cop ((Caddv | Cadda), [arg1; arg2], _) ->
+    (* reg + reg with no shift: use Iindexed2scaled Zero *)
+    Iindexed2scaled Zero, Ctuple [arg1; arg2]
   | Cconst_symbol (s, _) when use_direct_addressing s ->
     Ibased (s.sym_name, 0), Ctuple []
   | arg -> Iindexed 0, arg
