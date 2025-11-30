@@ -108,14 +108,14 @@ let code f_1 deleted in
 let code loopify(never) size(72) newer_version_of(foo_0)
       foo_0_1 (arr : any array, f : val, i : imm tagged)
         my_closure _region _ghost_region my_depth
-        -> k * k1
+        -> k1 * k2
         : imm tagged =
   (let prim = %array_length generic arr in
    let prim_1 = %int_comp i < prim in
    switch prim_1
-     | 0 -> k3
-     | 1 -> k4)
-    where k4 =
+     | 0 -> k2 pop(regular k2) ($camlTests3__block16)
+     | 1 -> k6)
+    where k6 =
       ((let cond_result = %is_flat_float_array arr in
         switch cond_result
           | 0 -> k6
@@ -128,24 +128,22 @@ let code loopify(never) size(72) newer_version_of(foo_0)
            let ifso_result = %Box_float prim in
            cont k4 (ifso_result)
          where k4 (if_then_else_result) =
-           apply f (if_then_else_result) -> k2 * k1)
-    where k3 =
-      cont k1 pop(regular k1) ($camlTests3__block16)
-    where k2 (apply_result : val) =
+           apply f (if_then_else_result) -> k3 * k2)
+    where k3 (apply_result : val) =
       ((let cond_result = %is_flat_float_array arr in
         switch cond_result
           | 0 -> k4
           | 1 -> k3)
          where k4 =
            let ifnot_result = %array_set arr.(i) <- apply_result in
-           cont k2
+           cont k2_1
          where k3 =
            let prim = %unbox_float apply_result in
            let ifso_result = %array_set float arr.(i) = prim in
-           cont k2
-         where k2 =
+           cont k2_1
+         where k2_1 =
            let if_then_else_result = 0 in
-           cont k (if_then_else_result))
+           cont k1 (if_then_else_result))
 in
 let $camlTests3__foo_2 = closure foo_0_1 @foo in
 let code loopify(never) size(33) newer_version_of(f_1)

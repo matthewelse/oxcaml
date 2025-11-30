@@ -628,15 +628,15 @@ let convert_index_to_tagged_int ~index ~(index_kind : Lambda.array_index_kind) =
              },
            index ))
 
-let convert_index_to_untagged_int ~index ~(index_kind : Lambda.array_index_kind)
-    =
-  let src = convert_lambda_index_to_standard_int_or_float index_kind in
-  H.Prim (Unary (Num_conv { src; dst = Naked_immediate }, index))
-
 let convert_index_to_naked_int64 ~index ~(index_kind : Lambda.array_index_kind)
     =
   let src = convert_lambda_index_to_standard_int_or_float index_kind in
   H.Prim (Unary (Num_conv { src; dst = Naked_int64 }, index))
+
+let convert_index_to_naked_nativeint ~index
+    ~(index_kind : Lambda.array_index_kind) =
+  let src = convert_lambda_index_to_standard_int_or_float index_kind in
+  H.Prim (Unary (Num_conv { src; dst = Naked_nativeint }, index))
 
 let check_non_negative_imm imm prim_name =
   if not (Target_ocaml_int.is_non_negative imm)
@@ -844,7 +844,7 @@ let string_like_load ~dbg ~unsafe
     (kind : P.string_like_value) mode ~boxed string ~index_kind index
     ~current_region =
   let unsafe_load =
-    let index = convert_index_to_untagged_int ~index ~index_kind in
+    let index = convert_index_to_naked_nativeint ~index ~index_kind in
     let wrap =
       match access_size, mode with
       | (Eight | Sixteen), None ->
@@ -891,7 +891,7 @@ let bytes_like_set ~dbg ~unsafe
     ~(access_size : Flambda_primitive.string_accessor_width) ~machine_width
     (kind : P.bytes_like_value) ~boxed bytes ~index_kind index new_value =
   let unsafe_set =
-    let index = convert_index_to_untagged_int ~index ~index_kind in
+    let index = convert_index_to_naked_nativeint ~index ~index_kind in
     let wrap =
       match access_size with
       | Eight | Sixteen ->

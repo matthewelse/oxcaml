@@ -53,7 +53,7 @@
          : imm tagged =
    let next_depth = rec_info (succ my_depth) in
    let prim = %untag_imm 120 in
-   let prim_1 = %num_conv (imm tagged -> imm) i in
+   let prim_1 = %num_conv (imm tagged -> nativeint) i in
    let Pbytessetu = %bytes_set 8 b.(prim_1) prim in
    cont k1 (Pbytessetu)
  in
@@ -182,7 +182,7 @@ let code loopify(never) size(5) newer_version_of(set_to_x_2)
         my_closure _region _ghost_region my_depth
         -> k * k1
         : imm tagged =
-  let prim = %num_conv (imm tagged -> imm) i in
+  let prim = %num_conv (imm tagged -> nativeint) i in
   let Pbytessetu = %bytes_set 8 b.(prim) 120i in
   cont k (0)
 in
