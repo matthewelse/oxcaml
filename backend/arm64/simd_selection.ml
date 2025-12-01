@@ -401,6 +401,12 @@ let select_simd_instr op args dbg =
   | "caml_neon_int16x8_dup_lane" ->
     let lane, args = extract_constant args ~max:7 op dbg in
     Some (Dupq_lane_s16 { lane }, args)
+  | "caml_neon_int8x16_dup_n" -> Some (Dupq_n_s8, args)
+  | "caml_neon_int16x8_dup_n" -> Some (Dupq_n_s16, args)
+  | "caml_neon_int32x4_dup_n" -> Some (Dupq_n_s32, args)
+  | "caml_neon_int64x2_dup_n" -> Some (Dupq_n_s64, args)
+  | "caml_neon_float32x4_dup_n" -> Some (Dupq_n_f32, args)
+  | "caml_neon_float64x2_dup_n" -> Some (Dupq_n_f64, args)
   | _ -> None
 
 let select_operation_cfg op args dbg =
@@ -430,7 +436,8 @@ let pseudoregs_for_operation (simd_op : Simd.operation) arg res =
   | Rs16x8lane_to_Rs16x8 _ | Rs64x2_to_Rs32x2 | Rs8x16lane_to_Rs8x16 _
   | Rs8x16_to_Rs8 _ | Rs32x4_to_Rs16x4 | Rs16x8_to_Rs8x8
   | Rs16x8_Rs16x8_to_Rs32x4 | Rs16x4_Rs16x4_to_Rs32x4 | Rs16x4_to_Rs32x4
-  | Rs8x8_to_Rs16x8 ->
+  | Rs8x8_to_Rs16x8 | Rs8_to_Rs8x16 | Rs16_to_Rs16x8 | Rs32_to_Rs32x4
+  | Rs64_to_Rs64x2 | Rf32_to_Rf32x4 | Rf64_to_Rf64x2 ->
     arg, res
 
 (* See `amd64/simd_selection.ml`. *)

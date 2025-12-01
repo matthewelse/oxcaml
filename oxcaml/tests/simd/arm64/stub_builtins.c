@@ -25,6 +25,7 @@ BUILTIN(caml_neon_float32x4_min);
 BUILTIN(caml_neon_float32x4_rcp);
 BUILTIN(caml_neon_float32x4_rsqrt);
 BUILTIN(caml_neon_float32x4_sqrt);
+BUILTIN(caml_neon_float32x4_dup_n);
 BUILTIN(caml_simd_vec128_high_64_to_low_64);
 BUILTIN(caml_simd_vec128_low_64_to_high_64);
 BUILTIN(caml_simd_vec128_interleave_high_32);
@@ -60,6 +61,7 @@ BUILTIN(caml_neon_float64x2_min);
 BUILTIN(caml_neon_float64x2_mul);
 BUILTIN(caml_neon_float64x2_div);
 BUILTIN(caml_neon_float64x2_sqrt);
+BUILTIN(caml_neon_float64x2_dup_n);
 BUILTIN(caml_neon_vec128_and);
 BUILTIN(caml_neon_vec128_andnot);
 BUILTIN(caml_neon_vec128_or);
@@ -235,6 +237,7 @@ BUILTIN(caml_neon_int16x8_sshl)
 BUILTIN(caml_neon_int16x8_ushl)
 BUILTIN(caml_neon_int32x4_dup)
 BUILTIN(caml_neon_int32x4_dup_lane)
+BUILTIN(caml_neon_int32x4_dup_n)
 BUILTIN(caml_neon_int32x4_sshl)
 BUILTIN(caml_neon_int32x4_ushl)
 BUILTIN(caml_neon_int64x2_bitwise_and)
@@ -248,6 +251,7 @@ BUILTIN(caml_neon_int64x2_cmplez)
 BUILTIN(caml_neon_int64x2_cmpltz)
 BUILTIN(caml_neon_int64x2_dup)
 BUILTIN(caml_neon_int64x2_dup_lane)
+BUILTIN(caml_neon_int64x2_dup_n)
 BUILTIN(caml_neon_int64x2_neg)
 BUILTIN(caml_neon_int64x2_sshl)
 BUILTIN(caml_neon_int64x2_ushl)
@@ -278,6 +282,7 @@ BUILTIN(caml_neon_cvt_int32x4_to_int16x8_high);
 BUILTIN(caml_neon_cvt_int32x4_to_int16x8_low);
 BUILTIN(caml_neon_int16x8_dup);
 BUILTIN(caml_neon_int16x8_dup_lane);
+BUILTIN(caml_neon_int16x8_dup_n);
 BUILTIN(caml_neon_int16x8_minpos_unsigned);
 BUILTIN(caml_neon_int16x8_mul_high_long);
 BUILTIN(caml_neon_int16x8_mul_high_long_unsigned);
@@ -285,3 +290,4 @@ BUILTIN(caml_neon_int16x8_mul_low_long);
 BUILTIN(caml_neon_int16x8_mul_low_long_unsigned);
 BUILTIN(caml_neon_int8x16_dup);
 BUILTIN(caml_neon_int8x16_dup_lane);
+BUILTIN(caml_neon_int8x16_dup_n);

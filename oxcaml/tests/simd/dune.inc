@@ -6205,3 +6205,32 @@
            (<> %{system} macosx)))
  (action
    (diff empty.expected ops_int8x32_u_internal_assembler.out)))
+
+(executable
+ (name test_dup_n)
+ (modules test_dup_n)
+ (enabled_if
+      (and (= %{context_name} "main")
+           (= %{architecture} "arm64")))
+ (ocamlopt_flags
+  (:standard -extension simd_beta))
+ (libraries simd_test_builtins stdlib_stable stdlib_upstream_compatible)
+ (foreign_archives stubs))
+
+(rule
+ (alias runtest)
+ (enabled_if
+      (and (= %{context_name} "main")
+           (= %{architecture} "arm64")))
+ (action
+  (with-outputs-to
+   test_dup_n.out
+   (run ./test_dup_n.exe))))
+
+(rule
+ (alias runtest)
+ (enabled_if
+      (and (= %{context_name} "main")
+           (= %{architecture} "arm64")))
+ (action
+   (diff empty.expected test_dup_n.out)))

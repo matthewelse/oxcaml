@@ -403,6 +403,15 @@ end = struct
       check_reg Vec128 i.arg.(0);
       check_reg Int i.arg.(1);
       assert (Reg.same_loc i.res.(0) i.arg.(0))
+    | Rs8_to_Rs8x16 | Rs16_to_Rs16x8 | Rs32_to_Rs32x4 | Rs64_to_Rs64x2 ->
+      check_reg Int i.arg.(0);
+      check_reg Vec128 i.res.(0)
+    | Rf32_to_Rf32x4 ->
+      check_reg Float32 i.arg.(0);
+      check_reg Vec128 i.res.(0)
+    | Rf64_to_Rf64x2 ->
+      check_reg Float i.arg.(0);
+      check_reg Vec128 i.res.(0)
 
   let src_operands ops =
     (* returns a copy of [ops] without the first operand, which is assumed to be
@@ -522,6 +531,12 @@ end = struct
       [| emit_reg_v4s i.res.(0); emit_reglane_s i.arg.(0) ~lane |]
     | Rs64x2lane_to_Rs64x2 { lane } ->
       [| emit_reg_v2d i.res.(0); emit_reglane_d i.arg.(0) ~lane |]
+    | Rs8_to_Rs8x16 -> [| emit_reg_v16b i.res.(0); emit_reg_w i.arg.(0) |]
+    | Rs16_to_Rs16x8 -> [| emit_reg_v8h i.res.(0); emit_reg_w i.arg.(0) |]
+    | Rs32_to_Rs32x4 -> [| emit_reg_v4s i.res.(0); emit_reg_w i.arg.(0) |]
+    | Rs64_to_Rs64x2 -> [| emit_reg_v2d i.res.(0); emit_reg i.arg.(0) |]
+    | Rf32_to_Rf32x4 -> [| emit_reg_v4s i.res.(0); emit_reg_s i.arg.(0) |]
+    | Rf64_to_Rf64x2 -> [| emit_reg_v2d i.res.(0); emit_reg_d i.arg.(0) |]
 
   let simd_instr_size (op : Simd.operation) =
     match op with
@@ -543,6 +558,7 @@ end = struct
     | Negq_s64 | Shlq_u32 | Shlq_u64 | Shlq_s32 | Shlq_s64 | Shlq_n_u32 _
     | Shlq_n_u64 _ | Shrq_n_u32 _ | Shrq_n_u64 _ | Shrq_n_s32 _ | Shrq_n_s64 _
     | Setq_lane_s32 _ | Setq_lane_s64 _ | Dupq_lane_s32 _ | Dupq_lane_s64 _
+    | Dupq_n_s8 | Dupq_n_s16 | Dupq_n_s32 | Dupq_n_s64 | Dupq_n_f32 | Dupq_n_f64
     | Cvtq_f64_s64 | Cvtq_s64_f64 | Cvtnq_s64_f64 | Movl_s32 | Movl_u32
     | Addq_s16 | Paddq_s16 | Qaddq_s16 | Qaddq_u16 | Subq_s16 | Qsubq_s16
     | Qsubq_u16 | Absq_s16 | Minq_s16 | Maxq_s16 | Minq_u16 | Maxq_u16
@@ -685,6 +701,9 @@ end = struct
       (* sign-extend the result to 64-bit and place in Xn *)
       ins I.SMOV operands
     | Dupq_lane_s32 _ | Dupq_lane_s64 _ | Dupq_lane_s16 _ | Dupq_lane_s8 _ ->
+      ins I.DUP operands
+    | Dupq_n_s8 | Dupq_n_s16 | Dupq_n_s32 | Dupq_n_s64 | Dupq_n_f32 | Dupq_n_f64
+      ->
       ins I.DUP operands
     | Qaddq_s16 | Qaddq_s8 -> ins I.SQADD operands
     | Qaddq_u16 | Qaddq_u8 -> ins I.UQADD operands

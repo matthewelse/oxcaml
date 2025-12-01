@@ -126,7 +126,9 @@ let offset_addressing addr delta =
   match addr with
   | Iindexed i -> Iindexed (i + delta)
   | Ibased (sym, i) -> Ibased (sym, i + delta)
-  | Iindexed2scaled _ -> Misc.fatal_error "Arch.offset_addressing: cannot add an offset to [Iindexed2scaled]"
+  | Iindexed2scaled _ ->
+    Misc.fatal_error
+      "Arch.offset_addressing: cannot add an offset to [Iindexed2scaled]"
 
 let num_args_addressing = function
   | Iindexed _ -> 1

@@ -92,6 +92,13 @@ type register_behavior =
   | Rs16x8lane_to_Rs16x8 of { lane : int }
   | Rs32x4lane_to_Rs32x4 of { lane : int }
   | Rs64x2lane_to_Rs64x2 of { lane : int }
+  (* dup from scalar *)
+  | Rs8_to_Rs8x16
+  | Rs16_to_Rs16x8
+  | Rs32_to_Rs32x4
+  | Rs64_to_Rs64x2
+  | Rf32_to_Rf32x4
+  | Rf64_to_Rf64x2
 
 let register_behavior (op : Simd.operation) =
   match op with
@@ -164,6 +171,12 @@ let register_behavior (op : Simd.operation) =
   | Dupq_lane_s16 { lane } -> Rs16x8lane_to_Rs16x8 { lane }
   | Dupq_lane_s32 { lane } -> Rs32x4lane_to_Rs32x4 { lane }
   | Dupq_lane_s64 { lane } -> Rs64x2lane_to_Rs64x2 { lane }
+  | Dupq_n_s8 -> Rs8_to_Rs8x16
+  | Dupq_n_s16 -> Rs16_to_Rs16x8
+  | Dupq_n_s32 -> Rs32_to_Rs32x4
+  | Dupq_n_s64 -> Rs64_to_Rs64x2
+  | Dupq_n_f32 -> Rf32_to_Rf32x4
+  | Dupq_n_f64 -> Rf64_to_Rf64x2
   | Orrq_s8 | Andq_s8 | Eorq_s8 | Orrq_s16 | Andq_s16 | Eorq_s16 | Eorq_s32
   | Andq_s32 | Orrq_s32 | Orrq_s64 | Andq_s64 | Eorq_s64 ->
     (* Bitwise operation, lane width does not matter. The only two encodings
