@@ -261,6 +261,10 @@ end = struct
 
   let emit_reg_w reg = reg_w (reg_index reg)
 
+  let emit_reg_b reg = reg_b (reg_index reg)
+
+  let emit_reg_h reg = reg_h (reg_index reg)
+
   let emit_reg_s reg = reg_s (reg_index reg)
 
   let emit_reg_d reg = reg_d (reg_index reg)
@@ -412,6 +416,12 @@ end = struct
     | Rf64_to_Rf64x2 ->
       check_reg Float i.arg.(0);
       check_reg Vec128 i.res.(0)
+    (* Reduction: vector to scalar in FP register *)
+    | Rs8x16_to_Rf8 | Rs16x8_to_Rf16 | Rs32x4_to_Rf32 | Rf32x4_to_Rf32
+    | Rf64x2_to_Rf64 ->
+      (* TODO: melse: s/Vec128/Float for the results? *)
+      check_reg Vec128 i.arg.(0);
+      check_reg Float i.res.(0)
 
   let src_operands ops =
     (* returns a copy of [ops] without the first operand, which is assumed to be
@@ -537,6 +547,12 @@ end = struct
     | Rs64_to_Rs64x2 -> [| emit_reg_v2d i.res.(0); emit_reg i.arg.(0) |]
     | Rf32_to_Rf32x4 -> [| emit_reg_v4s i.res.(0); emit_reg_s i.arg.(0) |]
     | Rf64_to_Rf64x2 -> [| emit_reg_v2d i.res.(0); emit_reg_d i.arg.(0) |]
+    (* Reduction: vector to scalar in FP register *)
+    | Rs8x16_to_Rf8 -> [| emit_reg_b i.res.(0); emit_reg_v16b i.arg.(0) |]
+    | Rs16x8_to_Rf16 -> [| emit_reg_h i.res.(0); emit_reg_v8h i.arg.(0) |]
+    | Rs32x4_to_Rf32 -> [| emit_reg_s i.res.(0); emit_reg_v4s i.arg.(0) |]
+    | Rf32x4_to_Rf32 -> [| emit_reg_s i.res.(0); emit_reg_v4s i.arg.(0) |]
+    | Rf64x2_to_Rf64 -> [| emit_reg_d i.res.(0); emit_reg_v2d i.arg.(0) |]
 
   let simd_instr_size (op : Simd.operation) =
     match op with
@@ -559,22 +575,24 @@ end = struct
     | Shlq_n_u64 _ | Shrq_n_u32 _ | Shrq_n_u64 _ | Shrq_n_s32 _ | Shrq_n_s64 _
     | Setq_lane_s32 _ | Setq_lane_s64 _ | Dupq_lane_s32 _ | Dupq_lane_s64 _
     | Dupq_n_s8 | Dupq_n_s16 | Dupq_n_s32 | Dupq_n_s64 | Dupq_n_f32 | Dupq_n_f64
-    | Cvtq_f64_s64 | Cvtq_s64_f64 | Cvtnq_s64_f64 | Movl_s32 | Movl_u32
-    | Addq_s16 | Paddq_s16 | Qaddq_s16 | Qaddq_u16 | Subq_s16 | Qsubq_s16
-    | Qsubq_u16 | Absq_s16 | Minq_s16 | Maxq_s16 | Minq_u16 | Maxq_u16
-    | Mvnq_s16 | Orrq_s16 | Andq_s16 | Eorq_s16 | Negq_s16 | Cntq_u16 | Shlq_u16
-    | Shlq_s16 | Cmp_s16 _ | Cmpz_s16 _ | Shlq_n_u16 _ | Shrq_n_u16 _
-    | Shrq_n_s16 _ | Getq_lane_s16 _ | Setq_lane_s16 _ | Dupq_lane_s16 _
-    | Movn_s64 | Copyq_laneq_s64 _ | Addq_s8 | Paddq_s8 | Qaddq_s8 | Qaddq_u8
-    | Subq_s8 | Qsubq_s8 | Qsubq_u8 | Absq_s8 | Minq_s8 | Maxq_s8 | Minq_u8
-    | Maxq_u8 | Mvnq_s8 | Orrq_s8 | Andq_s8 | Eorq_s8 | Negq_s8 | Cntq_u8
-    | Shlq_u8 | Shlq_s8 | Cmp_s8 _ | Cmpz_s8 _ | Shlq_n_u8 _ | Shrq_n_u8 _
-    | Shrq_n_s8 _ | Getq_lane_s8 _ | Setq_lane_s8 _ | Dupq_lane_s8 _ | Extq_u8 _
-    | Qmovn_high_s64 | Qmovn_s64 | Qmovn_high_s32 | Qmovn_s32 | Qmovn_high_u32
-    | Qmovn_u32 | Qmovn_high_s16 | Qmovn_s16 | Qmovn_high_u16 | Qmovn_u16
-    | Movn_high_s64 | Movn_high_s32 | Movn_s32 | Movn_high_s16 | Movn_s16
-    | Mullq_s16 | Mullq_u16 | Mullq_high_s16 | Mullq_high_u16 | Movl_s16
-    | Movl_u16 | Movl_s8 | Movl_u8 ->
+    | Maxvq_s8 | Maxvq_s16 | Maxvq_s32 | Maxvq_u8 | Maxvq_u16 | Maxvq_u32
+    | Minvq_s8 | Minvq_s16 | Minvq_s32 | Minvq_u8 | Minvq_u16 | Minvq_u32
+    | Maxvq_f32 | Maxvq_f64 | Minvq_f32 | Minvq_f64 | Cvtq_f64_s64
+    | Cvtq_s64_f64 | Cvtnq_s64_f64 | Movl_s32 | Movl_u32 | Addq_s16 | Paddq_s16
+    | Qaddq_s16 | Qaddq_u16 | Subq_s16 | Qsubq_s16 | Qsubq_u16 | Absq_s16
+    | Minq_s16 | Maxq_s16 | Minq_u16 | Maxq_u16 | Mvnq_s16 | Orrq_s16 | Andq_s16
+    | Eorq_s16 | Negq_s16 | Cntq_u16 | Shlq_u16 | Shlq_s16 | Cmp_s16 _
+    | Cmpz_s16 _ | Shlq_n_u16 _ | Shrq_n_u16 _ | Shrq_n_s16 _ | Getq_lane_s16 _
+    | Setq_lane_s16 _ | Dupq_lane_s16 _ | Movn_s64 | Copyq_laneq_s64 _ | Addq_s8
+    | Paddq_s8 | Qaddq_s8 | Qaddq_u8 | Subq_s8 | Qsubq_s8 | Qsubq_u8 | Absq_s8
+    | Minq_s8 | Maxq_s8 | Minq_u8 | Maxq_u8 | Mvnq_s8 | Orrq_s8 | Andq_s8
+    | Eorq_s8 | Negq_s8 | Cntq_u8 | Shlq_u8 | Shlq_s8 | Cmp_s8 _ | Cmpz_s8 _
+    | Shlq_n_u8 _ | Shrq_n_u8 _ | Shrq_n_s8 _ | Getq_lane_s8 _ | Setq_lane_s8 _
+    | Dupq_lane_s8 _ | Extq_u8 _ | Qmovn_high_s64 | Qmovn_s64 | Qmovn_high_s32
+    | Qmovn_s32 | Qmovn_high_u32 | Qmovn_u32 | Qmovn_high_s16 | Qmovn_s16
+    | Qmovn_high_u16 | Qmovn_u16 | Movn_high_s64 | Movn_high_s32 | Movn_s32
+    | Movn_high_s16 | Movn_s16 | Mullq_s16 | Mullq_u16 | Mullq_high_s16
+    | Mullq_high_u16 | Movl_s16 | Movl_u16 | Movl_s8 | Movl_u8 ->
       1
 
   let emit_rounding_mode (rm : Simd.Rounding_mode.t) : I.Rounding_mode.t =
@@ -705,6 +723,12 @@ end = struct
     | Dupq_n_s8 | Dupq_n_s16 | Dupq_n_s32 | Dupq_n_s64 | Dupq_n_f32 | Dupq_n_f64
       ->
       ins I.DUP operands
+    | Maxvq_s8 | Maxvq_s16 | Maxvq_s32 -> ins I.SMAXV operands
+    | Maxvq_u8 | Maxvq_u16 | Maxvq_u32 -> ins I.UMAXV operands
+    | Minvq_s8 | Minvq_s16 | Minvq_s32 -> ins I.SMINV operands
+    | Minvq_u8 | Minvq_u16 | Minvq_u32 -> ins I.UMINV operands
+    | Maxvq_f32 | Maxvq_f64 -> ins I.FMAXV operands
+    | Minvq_f32 | Minvq_f64 -> ins I.FMINV operands
     | Qaddq_s16 | Qaddq_s8 -> ins I.SQADD operands
     | Qaddq_u16 | Qaddq_u8 -> ins I.UQADD operands
     | Qsubq_s16 | Qsubq_s8 -> ins I.SQSUB operands

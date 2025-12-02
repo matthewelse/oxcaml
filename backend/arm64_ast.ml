@@ -174,6 +174,9 @@ module Reg = struct
   let reg_b_array =
     reg_array ~last:Neon_reg_name.last (Reg_name.Neon (Neon_reg_name.Scalar B))
 
+  let reg_h_array =
+    reg_array ~last:Neon_reg_name.last (Reg_name.Neon (Neon_reg_name.Scalar H))
+
   let reg_s_array =
     reg_array ~last:Neon_reg_name.last (Reg_name.Neon (Neon_reg_name.Scalar S))
 
@@ -223,6 +226,10 @@ module Reg = struct
   let reg_x i = reg_x_array.(i)
 
   let reg_w i = reg_w_array.(i)
+
+  let reg_b i = reg_b_array.(i)
+
+  let reg_h i = reg_h_array.(i)
 
   let reg_s i = reg_s_array.(i)
 
@@ -457,6 +464,12 @@ module Instruction_name = struct
     | FCM of Float_cond.t
     | CM of Cond.t
     | ADDV
+    | SMAXV
+    | UMAXV
+    | SMINV
+    | UMINV
+    | FMAXV
+    | FMINV
     | MVN
     | NEG
     | SMOV
@@ -596,6 +609,12 @@ module Instruction_name = struct
     | CM cond -> "cm" ^ Cond.to_string cond
     | FCVTL -> "fcvtl"
     | ADDV -> "addv"
+    | SMAXV -> "smaxv"
+    | UMAXV -> "umaxv"
+    | SMINV -> "sminv"
+    | UMINV -> "uminv"
+    | FMAXV -> "fmaxv"
+    | FMINV -> "fminv"
     | MVN -> "mvn"
     | NEG -> "neg"
     | SMOV -> "smov"
@@ -795,6 +814,8 @@ module Operand = struct
 
   let reg_b = Array.map (fun x -> Reg x) Reg.reg_b_array
 
+  let reg_h = Array.map (fun x -> Reg x) Reg.reg_h_array
+
   let reg_s = Array.map (fun x -> Reg x) Reg.reg_s_array
 
   let reg_d = Array.map (fun x -> Reg x) Reg.reg_d_array
@@ -984,6 +1005,8 @@ module DSL = struct
   let reg_v4h index = Operand.reg_v4h.(index)
 
   let reg_b index = Operand.reg_b.(index)
+
+  let reg_h index = Operand.reg_h.(index)
 
   let reg_s index = Operand.reg_s.(index)
 

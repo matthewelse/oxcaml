@@ -291,3 +291,21 @@ BUILTIN(caml_neon_int16x8_mul_low_long_unsigned);
 BUILTIN(caml_neon_int8x16_dup);
 BUILTIN(caml_neon_int8x16_dup_lane);
 BUILTIN(caml_neon_int8x16_dup_n);
+
+// Horizontal max/min reduction intrinsics
+BUILTIN(caml_neon_int8x16_maxv);
+BUILTIN(caml_neon_int8x16_minv);
+BUILTIN(caml_neon_int8x16_maxv_unsigned);
+BUILTIN(caml_neon_int8x16_minv_unsigned);
+BUILTIN(caml_neon_int16x8_maxv);
+BUILTIN(caml_neon_int16x8_minv);
+BUILTIN(caml_neon_int16x8_maxv_unsigned);
+BUILTIN(caml_neon_int16x8_minv_unsigned);
+BUILTIN(caml_neon_int32x4_maxv);
+BUILTIN(caml_neon_int32x4_minv);
+BUILTIN(caml_neon_int32x4_maxv_unsigned);
+BUILTIN(caml_neon_int32x4_minv_unsigned);
+BUILTIN(caml_neon_float32x4_maxv);
+BUILTIN(caml_neon_float32x4_minv);
+BUILTIN(caml_neon_float64x2_maxv);
+BUILTIN(caml_neon_float64x2_minv);

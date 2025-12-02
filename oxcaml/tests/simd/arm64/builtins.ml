@@ -322,6 +322,22 @@ module Int32x4 = struct
     = "caml_vec128_unreachable" "caml_neon_int32x4_dup_n"
     [@@noalloc] [@@builtin]
 
+  external maxv : (t[@unboxed]) -> (int32[@unboxed])
+    = "caml_vec128_unreachable" "caml_neon_int32x4_maxv"
+    [@@noalloc] [@@builtin]
+
+  external minv : (t[@unboxed]) -> (int32[@unboxed])
+    = "caml_vec128_unreachable" "caml_neon_int32x4_minv"
+    [@@noalloc] [@@builtin]
+
+  external maxv_unsigned : (t[@unboxed]) -> (int32[@unboxed])
+    = "caml_vec128_unreachable" "caml_neon_int32x4_maxv_unsigned"
+    [@@noalloc] [@@builtin]
+
+  external minv_unsigned : (t[@unboxed]) -> (int32[@unboxed])
+    = "caml_vec128_unreachable" "caml_neon_int32x4_minv_unsigned"
+    [@@noalloc] [@@builtin]
+
   external bitwise_not : t -> t
     = "caml_vec128_unreachable" "caml_neon_int32x4_bitwise_not"
     [@@noalloc] [@@unboxed] [@@builtin]
@@ -454,6 +470,14 @@ module Float32x4 = struct
     = "caml_vec128_unreachable" "caml_neon_float32x4_dup_n"
     [@@noalloc] [@@builtin]
 
+  external maxv : (t[@unboxed]) -> (float32[@unboxed])
+    = "caml_vec128_unreachable" "caml_neon_float32x4_maxv"
+    [@@noalloc] [@@builtin]
+
+  external minv : (t[@unboxed]) -> (float32[@unboxed])
+    = "caml_vec128_unreachable" "caml_neon_float32x4_minv"
+    [@@noalloc] [@@builtin]
+
   external cvt_int32x4 : t -> int32x4
     = "caml_vec128_unreachable" "caml_neon_cvt_float32x4_to_int32x4"
     [@@noalloc] [@@unboxed] [@@builtin]
@@ -547,6 +571,14 @@ module Float64x2 = struct
 
   external dup_n : (float[@unboxed]) -> (t[@unboxed])
     = "caml_vec128_unreachable" "caml_neon_float64x2_dup_n"
+    [@@noalloc] [@@builtin]
+
+  external maxv : (t[@unboxed]) -> (float[@unboxed])
+    = "caml_vec128_unreachable" "caml_neon_float64x2_maxv"
+    [@@noalloc] [@@builtin]
+
+  external minv : (t[@unboxed]) -> (float[@unboxed])
+    = "caml_vec128_unreachable" "caml_neon_float64x2_minv"
     [@@noalloc] [@@builtin]
 
   external cvt_int64x2 : t -> int64x2
@@ -761,6 +793,22 @@ module Int16x8 = struct
     = "caml_vec128_unreachable" "caml_neon_int16x8_dup_n"
     [@@noalloc] [@@builtin]
 
+  external maxv : (t[@unboxed]) -> int
+    = "caml_vec128_unreachable" "caml_neon_int16x8_maxv"
+    [@@noalloc] [@@builtin]
+
+  external minv : (t[@unboxed]) -> int
+    = "caml_vec128_unreachable" "caml_neon_int16x8_minv"
+    [@@noalloc] [@@builtin]
+
+  external maxv_unsigned : (t[@unboxed]) -> int
+    = "caml_vec128_unreachable" "caml_neon_int16x8_maxv_unsigned"
+    [@@noalloc] [@@builtin]
+
+  external minv_unsigned : (t[@unboxed]) -> int
+    = "caml_vec128_unreachable" "caml_neon_int16x8_minv_unsigned"
+    [@@noalloc] [@@builtin]
+
   external slli : (int[@untagged]) -> (t[@unboxed]) -> (t[@unboxed])
     = "caml_vec128_unreachable" "caml_neon_int16x8_slli"
     [@@noalloc] [@@builtin]
@@ -916,6 +964,22 @@ module Int8x16 = struct
 
   external dup_n : (int[@untagged]) -> (t[@unboxed])
     = "caml_vec128_unreachable" "caml_neon_int8x16_dup_n"
+    [@@noalloc] [@@builtin]
+
+  external maxv : (t[@unboxed]) -> int
+    = "caml_vec128_unreachable" "caml_neon_int8x16_maxv"
+    [@@noalloc] [@@builtin]
+
+  external minv : (t[@unboxed]) -> int
+    = "caml_vec128_unreachable" "caml_neon_int8x16_minv"
+    [@@noalloc] [@@builtin]
+
+  external maxv_unsigned : (t[@unboxed]) -> int
+    = "caml_vec128_unreachable" "caml_neon_int8x16_maxv_unsigned"
+    [@@noalloc] [@@builtin]
+
+  external minv_unsigned : (t[@unboxed]) -> int
+    = "caml_vec128_unreachable" "caml_neon_int8x16_minv_unsigned"
     [@@noalloc] [@@builtin]
 
   external slli : (int[@untagged]) -> (t[@unboxed]) -> (t[@unboxed])

@@ -288,6 +288,23 @@ type operation =
   | Dupq_n_s64
   | Dupq_n_f32
   | Dupq_n_f64
+  (* Reduction operations - vector to scalar *)
+  | Maxvq_s8
+  | Maxvq_s16
+  | Maxvq_s32
+  | Maxvq_u8
+  | Maxvq_u16
+  | Maxvq_u32
+  | Minvq_s8
+  | Minvq_s16
+  | Minvq_s32
+  | Minvq_u8
+  | Minvq_u16
+  | Minvq_u32
+  | Maxvq_f32
+  | Maxvq_f64
+  | Minvq_f32
+  | Minvq_f64
   | Copyq_laneq_s64 of
       { src_lane : int;
         dst_lane : int
@@ -482,6 +499,22 @@ let print_name op =
   | Dupq_n_s64 -> "Dupq_n_s64"
   | Dupq_n_f32 -> "Dupq_n_f32"
   | Dupq_n_f64 -> "Dupq_n_f64"
+  | Maxvq_s8 -> "Maxvq_s8"
+  | Maxvq_s16 -> "Maxvq_s16"
+  | Maxvq_s32 -> "Maxvq_s32"
+  | Maxvq_u8 -> "Maxvq_u8"
+  | Maxvq_u16 -> "Maxvq_u16"
+  | Maxvq_u32 -> "Maxvq_u32"
+  | Minvq_s8 -> "Minvq_s8"
+  | Minvq_s16 -> "Minvq_s16"
+  | Minvq_s32 -> "Minvq_s32"
+  | Minvq_u8 -> "Minvq_u8"
+  | Minvq_u16 -> "Minvq_u16"
+  | Minvq_u32 -> "Minvq_u32"
+  | Maxvq_f32 -> "Maxvq_f32"
+  | Maxvq_f64 -> "Maxvq_f64"
+  | Minvq_f32 -> "Minvq_f32"
+  | Minvq_f64 -> "Minvq_f64"
   | Copyq_laneq_s64 { src_lane; dst_lane } ->
     Printf.sprintf "Copyq_laneq_s64_%d_to_%d" src_lane dst_lane
   | Qmovn_high_s64 -> "Qmovn_high_s64"
@@ -663,7 +696,23 @@ let equal_operation op1 op2 =
   | Dupq_n_s32, Dupq_n_s32
   | Dupq_n_s64, Dupq_n_s64
   | Dupq_n_f32, Dupq_n_f32
-  | Dupq_n_f64, Dupq_n_f64 ->
+  | Dupq_n_f64, Dupq_n_f64
+  | Maxvq_s8, Maxvq_s8
+  | Maxvq_s16, Maxvq_s16
+  | Maxvq_s32, Maxvq_s32
+  | Maxvq_u8, Maxvq_u8
+  | Maxvq_u16, Maxvq_u16
+  | Maxvq_u32, Maxvq_u32
+  | Minvq_s8, Minvq_s8
+  | Minvq_s16, Minvq_s16
+  | Minvq_s32, Minvq_s32
+  | Minvq_u8, Minvq_u8
+  | Minvq_u16, Minvq_u16
+  | Minvq_u32, Minvq_u32
+  | Maxvq_f32, Maxvq_f32
+  | Maxvq_f64, Maxvq_f64
+  | Minvq_f32, Minvq_f32
+  | Minvq_f64, Minvq_f64 ->
     true
   | Extq_u8 n1, Extq_u8 n2
   | Shrq_n_s32 n1, Shrq_n_s32 n2
@@ -743,7 +792,10 @@ let equal_operation op1 op2 =
       | Qmovn_s16 | Qmovn_high_u16 | Qmovn_u16 | Movn_high_s64 | Movn_s64
       | Movn_high_s32 | Movn_s32 | Movn_high_s16 | Movn_s16 | Mullq_s16
       | Mullq_u16 | Mullq_high_s16 | Mullq_high_u16 | Dupq_n_s8 | Dupq_n_s16
-      | Dupq_n_s32 | Dupq_n_s64 | Dupq_n_f32 | Dupq_n_f64 ),
+      | Dupq_n_s32 | Dupq_n_s64 | Dupq_n_f32 | Dupq_n_f64
+      | Maxvq_s8 | Maxvq_s16 | Maxvq_s32 | Maxvq_u8 | Maxvq_u16 | Maxvq_u32
+      | Minvq_s8 | Minvq_s16 | Minvq_s32 | Minvq_u8 | Minvq_u16 | Minvq_u32
+      | Maxvq_f32 | Maxvq_f64 | Minvq_f32 | Minvq_f64 ),
       _ ) ->
     false
 
@@ -763,7 +815,11 @@ let class_of_operation op =
   | Cmpz_f64 _ | Cmp_s32 _ | Cmp_s64 _ | Cmpz_s64 _ | Mvnq_s32 | Orrq_s32
   | Andq_s32 | Eorq_s32 | Negq_s32 | Getq_lane_s32 _ | Getq_lane_s64 _
   | Dupq_lane_s32 _ | Dupq_lane_s64 _ | Dupq_n_s8 | Dupq_n_s16 | Dupq_n_s32
-  | Dupq_n_s64 | Dupq_n_f32 | Dupq_n_f64 | Mulq_s32 | Mulq_s16 | Addq_s32
+  | Dupq_n_s64 | Dupq_n_f32 | Dupq_n_f64
+  | Maxvq_s8 | Maxvq_s16 | Maxvq_s32 | Maxvq_u8 | Maxvq_u16 | Maxvq_u32
+  | Minvq_s8 | Minvq_s16 | Minvq_s32 | Minvq_u8 | Minvq_u16 | Minvq_u32
+  | Maxvq_f32 | Maxvq_f64 | Minvq_f32 | Minvq_f64
+  | Mulq_s32 | Mulq_s16 | Addq_s32
   | Subq_s32 | Minq_s32 | Maxq_s32 | Minq_u32 | Maxq_u32 | Absq_s32 | Absq_s64
   | Paddq_f64 | Paddq_s32 | Paddq_s64 | Mvnq_s64 | Orrq_s64 | Andq_s64
   | Eorq_s64 | Negq_s64 | Shlq_u32 | Shlq_u64 | Shlq_s32 | Shlq_s64

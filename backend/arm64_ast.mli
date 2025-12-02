@@ -61,6 +61,10 @@ module Reg : sig
 
   val reg_d : int -> t
 
+  val reg_b : int -> t
+
+  val reg_h : int -> t
+
   val reg_s : int -> t
 
   val reg_q : int -> t
@@ -292,6 +296,12 @@ module Instruction_name : sig
     | FCM of Float_cond.t
     | CM of Cond.t
     | ADDV
+    | SMAXV
+    | UMAXV
+    | SMINV
+    | UMINV
+    | FMAXV
+    | FMINV
     | MVN
     | NEG
     | SMOV
@@ -370,6 +380,8 @@ module DSL : sig
   val reg_v4h : int -> Operand.t
 
   val reg_b : int -> Operand.t
+
+  val reg_h : int -> Operand.t
 
   val reg_s : int -> Operand.t
 

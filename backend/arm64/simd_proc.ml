@@ -99,6 +99,12 @@ type register_behavior =
   | Rs64_to_Rs64x2
   | Rf32_to_Rf32x4
   | Rf64_to_Rf64x2
+  (* reduction - vector to scalar in float/vector register *)
+  | Rs8x16_to_Rf8
+  | Rs16x8_to_Rf16
+  | Rs32x4_to_Rf32
+  | Rf32x4_to_Rf32
+  | Rf64x2_to_Rf64
 
 let register_behavior (op : Simd.operation) =
   match op with
@@ -177,6 +183,11 @@ let register_behavior (op : Simd.operation) =
   | Dupq_n_s64 -> Rs64_to_Rs64x2
   | Dupq_n_f32 -> Rf32_to_Rf32x4
   | Dupq_n_f64 -> Rf64_to_Rf64x2
+  | Maxvq_s8 | Minvq_s8 | Maxvq_u8 | Minvq_u8 -> Rs8x16_to_Rf8
+  | Maxvq_s16 | Minvq_s16 | Maxvq_u16 | Minvq_u16 -> Rs16x8_to_Rf16
+  | Maxvq_s32 | Minvq_s32 | Maxvq_u32 | Minvq_u32 -> Rs32x4_to_Rf32
+  | Maxvq_f32 | Minvq_f32 -> Rf32x4_to_Rf32
+  | Maxvq_f64 | Minvq_f64 -> Rf64x2_to_Rf64
   | Orrq_s8 | Andq_s8 | Eorq_s8 | Orrq_s16 | Andq_s16 | Eorq_s16 | Eorq_s32
   | Andq_s32 | Orrq_s32 | Orrq_s64 | Andq_s64 | Eorq_s64 ->
     (* Bitwise operation, lane width does not matter. The only two encodings

@@ -407,6 +407,23 @@ let select_simd_instr op args dbg =
   | "caml_neon_int64x2_dup_n" -> Some (Dupq_n_s64, args)
   | "caml_neon_float32x4_dup_n" -> Some (Dupq_n_f32, args)
   | "caml_neon_float64x2_dup_n" -> Some (Dupq_n_f64, args)
+  (* Horizontal max/min reduction intrinsics *)
+  | "caml_neon_int8x16_maxv" -> Some (Maxvq_s8, args)
+  | "caml_neon_int16x8_maxv" -> Some (Maxvq_s16, args)
+  | "caml_neon_int32x4_maxv" -> Some (Maxvq_s32, args)
+  | "caml_neon_int8x16_maxv_unsigned" -> Some (Maxvq_u8, args)
+  | "caml_neon_int16x8_maxv_unsigned" -> Some (Maxvq_u16, args)
+  | "caml_neon_int32x4_maxv_unsigned" -> Some (Maxvq_u32, args)
+  | "caml_neon_int8x16_minv" -> Some (Minvq_s8, args)
+  | "caml_neon_int16x8_minv" -> Some (Minvq_s16, args)
+  | "caml_neon_int32x4_minv" -> Some (Minvq_s32, args)
+  | "caml_neon_int8x16_minv_unsigned" -> Some (Minvq_u8, args)
+  | "caml_neon_int16x8_minv_unsigned" -> Some (Minvq_u16, args)
+  | "caml_neon_int32x4_minv_unsigned" -> Some (Minvq_u32, args)
+  | "caml_neon_float32x4_maxv" -> Some (Maxvq_f32, args)
+  | "caml_neon_float64x2_maxv" -> Some (Maxvq_f64, args)
+  | "caml_neon_float32x4_minv" -> Some (Minvq_f32, args)
+  | "caml_neon_float64x2_minv" -> Some (Minvq_f64, args)
   | _ -> None
 
 let select_operation_cfg op args dbg =
@@ -437,7 +454,9 @@ let pseudoregs_for_operation (simd_op : Simd.operation) arg res =
   | Rs8x16_to_Rs8 _ | Rs32x4_to_Rs16x4 | Rs16x8_to_Rs8x8
   | Rs16x8_Rs16x8_to_Rs32x4 | Rs16x4_Rs16x4_to_Rs32x4 | Rs16x4_to_Rs32x4
   | Rs8x8_to_Rs16x8 | Rs8_to_Rs8x16 | Rs16_to_Rs16x8 | Rs32_to_Rs32x4
-  | Rs64_to_Rs64x2 | Rf32_to_Rf32x4 | Rf64_to_Rf64x2 ->
+  | Rs64_to_Rs64x2 | Rf32_to_Rf32x4 | Rf64_to_Rf64x2
+  | Rs8x16_to_Rf8 | Rs16x8_to_Rf16 | Rs32x4_to_Rf32
+  | Rf32x4_to_Rf32 | Rf64x2_to_Rf64 ->
     arg, res
 
 (* See `amd64/simd_selection.ml`. *)
