@@ -470,6 +470,7 @@ module Instruction_name = struct
     | UMINV
     | FMAXV
     | FMINV
+    | SHRN
     | MVN
     | NEG
     | SMOV
@@ -615,6 +616,7 @@ module Instruction_name = struct
     | UMINV -> "uminv"
     | FMAXV -> "fmaxv"
     | FMINV -> "fminv"
+    | SHRN -> "shrn"
     | MVN -> "mvn"
     | NEG -> "neg"
     | SMOV -> "smov"

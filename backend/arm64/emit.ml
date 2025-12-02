@@ -582,8 +582,9 @@ end = struct
     | Qaddq_s16 | Qaddq_u16 | Subq_s16 | Qsubq_s16 | Qsubq_u16 | Absq_s16
     | Minq_s16 | Maxq_s16 | Minq_u16 | Maxq_u16 | Mvnq_s16 | Orrq_s16 | Andq_s16
     | Eorq_s16 | Negq_s16 | Cntq_u16 | Shlq_u16 | Shlq_s16 | Cmp_s16 _
-    | Cmpz_s16 _ | Shlq_n_u16 _ | Shrq_n_u16 _ | Shrq_n_s16 _ | Getq_lane_s16 _
-    | Setq_lane_s16 _ | Dupq_lane_s16 _ | Movn_s64 | Copyq_laneq_s64 _ | Addq_s8
+    | Cmpz_s16 _ | Shlq_n_u16 _ | Shrq_n_u16 _ | Shrq_n_s16 _ | Shrn_n_u16 _
+    | Getq_lane_s16 _ | Setq_lane_s16 _ | Dupq_lane_s16 _ | Movn_s64
+    | Copyq_laneq_s64 _ | Addq_s8
     | Paddq_s8 | Qaddq_s8 | Qaddq_u8 | Subq_s8 | Qsubq_s8 | Qsubq_u8 | Absq_s8
     | Minq_s8 | Maxq_s8 | Minq_u8 | Maxq_u8 | Mvnq_s8 | Orrq_s8 | Andq_s8
     | Eorq_s8 | Negq_s8 | Cntq_u8 | Shlq_u8 | Shlq_s8 | Cmp_s8 _ | Cmpz_s8 _
@@ -729,6 +730,7 @@ end = struct
     | Minvq_u8 | Minvq_u16 | Minvq_u32 -> ins I.UMINV operands
     | Maxvq_f32 | Maxvq_f64 -> ins I.FMAXV operands
     | Minvq_f32 | Minvq_f64 -> ins I.FMINV operands
+    | Shrn_n_u16 n -> ins I.SHRN (Array.append operands [| imm n |])
     | Qaddq_s16 | Qaddq_s8 -> ins I.SQADD operands
     | Qaddq_u16 | Qaddq_u8 -> ins I.UQADD operands
     | Qsubq_s16 | Qsubq_s8 -> ins I.SQSUB operands

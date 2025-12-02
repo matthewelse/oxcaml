@@ -424,6 +424,10 @@ let select_simd_instr op args dbg =
   | "caml_neon_float64x2_maxv" -> Some (Maxvq_f64, args)
   | "caml_neon_float32x4_minv" -> Some (Minvq_f32, args)
   | "caml_neon_float64x2_minv" -> Some (Minvq_f64, args)
+  (* Narrowing shift intrinsics *)
+  | "caml_neon_int8x16_shrn" ->
+    let n, args = extract_constant args "shrn_n_u16" ~max:15 dbg in
+    Some (Shrn_n_u16 n, args)
   | _ -> None
 
 let select_operation_cfg op args dbg =

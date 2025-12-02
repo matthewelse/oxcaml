@@ -206,6 +206,7 @@ let register_behavior (op : Simd.operation) =
   | Absq_s16 | Negq_s16 | Cntq_u16 | Shlq_n_u16 _ | Shrq_n_u16 _ | Shrq_n_s16 _
   | Cmpz_s16 _ ->
     Rs16x8_to_Rs16x8
+  | Shrn_n_u16 _ -> Rs16x8_to_Rs8x8
   | Addq_s8 | Paddq_s8 | Qaddq_s8 | Qaddq_u8 | Subq_s8 | Qsubq_s8 | Qsubq_u8
   | Minq_s8 | Maxq_s8 | Minq_u8 | Maxq_u8 | Shlq_u8 | Shlq_s8 | Cmp_s8 _
   | Zip1q_s8 | Zip2q_s8 | Extq_u8 _ ->

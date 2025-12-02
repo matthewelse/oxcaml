@@ -302,6 +302,7 @@ module Instruction_name : sig
     | UMINV
     | FMAXV
     | FMINV
+    | SHRN
     | MVN
     | NEG
     | SMOV

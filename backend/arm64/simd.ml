@@ -305,6 +305,8 @@ type operation =
   | Maxvq_f64
   | Minvq_f32
   | Minvq_f64
+  (* Narrowing operations *)
+  | Shrn_n_u16 of int
   | Copyq_laneq_s64 of
       { src_lane : int;
         dst_lane : int
@@ -515,6 +517,7 @@ let print_name op =
   | Maxvq_f64 -> "Maxvq_f64"
   | Minvq_f32 -> "Minvq_f32"
   | Minvq_f64 -> "Minvq_f64"
+  | Shrn_n_u16 n -> "Shrn_n_u16_" ^ Int.to_string n
   | Copyq_laneq_s64 { src_lane; dst_lane } ->
     Printf.sprintf "Copyq_laneq_s64_%d_to_%d" src_lane dst_lane
   | Qmovn_high_s64 -> "Qmovn_high_s64"
@@ -726,7 +729,8 @@ let equal_operation op1 op2 =
   | Shrq_n_s16 n1, Shrq_n_s16 n2
   | Shlq_n_u8 n1, Shlq_n_u8 n2
   | Shrq_n_u8 n1, Shrq_n_u8 n2
-  | Shrq_n_s8 n1, Shrq_n_s8 n2 ->
+  | Shrq_n_s8 n1, Shrq_n_s8 n2
+  | Shrn_n_u16 n1, Shrn_n_u16 n2 ->
     Int.equal n1 n2
   | Getq_lane_s32 { lane = l }, Getq_lane_s32 { lane = l' }
   | Getq_lane_s64 { lane = l }, Getq_lane_s64 { lane = l' }
@@ -781,7 +785,7 @@ let equal_operation op1 op2 =
       | Subq_s16 | Qsubq_s16 | Qsubq_u16 | Absq_s16 | Minq_s16 | Maxq_s16
       | Minq_u16 | Maxq_u16 | Mvnq_s16 | Orrq_s16 | Andq_s16 | Eorq_s16
       | Negq_s16 | Cntq_u16 | Shlq_u16 | Shlq_s16 | Cmp_s16 _ | Cmpz_s16 _
-      | Shlq_n_u16 _ | Shrq_n_u16 _ | Shrq_n_s16 _ | Getq_lane_s16 _
+      | Shlq_n_u16 _ | Shrq_n_u16 _ | Shrq_n_s16 _ | Shrn_n_u16 _ | Getq_lane_s16 _
       | Setq_lane_s16 _ | Dupq_lane_s16 _ | Addq_s8 | Paddq_s8 | Qaddq_s8
       | Qaddq_u8 | Subq_s8 | Qsubq_s8 | Qsubq_u8 | Absq_s8 | Minq_s8 | Maxq_s8
       | Minq_u8 | Maxq_u8 | Mvnq_s8 | Orrq_s8 | Andq_s8 | Eorq_s8 | Negq_s8
@@ -828,8 +832,9 @@ let class_of_operation op =
   | Qaddq_s16 | Qaddq_u16 | Subq_s16 | Qsubq_s16 | Qsubq_u16 | Absq_s16
   | Minq_s16 | Maxq_s16 | Minq_u16 | Maxq_u16 | Mvnq_s16 | Orrq_s16 | Andq_s16
   | Eorq_s16 | Negq_s16 | Cntq_u16 | Shlq_u16 | Shlq_s16 | Cmp_s16 _
-  | Cmpz_s16 _ | Shlq_n_u16 _ | Shrq_n_u16 _ | Shrq_n_s16 _ | Getq_lane_s16 _
-  | Setq_lane_s16 _ | Dupq_lane_s16 _ | Addq_s8 | Paddq_s8 | Qaddq_s8 | Qaddq_u8
+  | Cmpz_s16 _ | Shlq_n_u16 _ | Shrq_n_u16 _ | Shrq_n_s16 _ | Shrn_n_u16 _
+  | Getq_lane_s16 _ | Setq_lane_s16 _ | Dupq_lane_s16 _ | Addq_s8 | Paddq_s8
+  | Qaddq_s8 | Qaddq_u8
   | Subq_s8 | Qsubq_s8 | Qsubq_u8 | Absq_s8 | Minq_s8 | Maxq_s8 | Minq_u8
   | Maxq_u8 | Mvnq_s8 | Orrq_s8 | Andq_s8 | Eorq_s8 | Negq_s8 | Cntq_u8
   | Shlq_u8 | Shlq_s8 | Cmp_s8 _ | Cmpz_s8 _ | Shlq_n_u8 _ | Shrq_n_u8 _
